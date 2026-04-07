@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Exam - CampusEase{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h2 class="card-title">
+                {% if form.instance.pk %}
+                    Edit Exam: {{ form.instance.subject }}
+                {% else %}
+                    Record New Exam
+                {% endif %}
+            </h2>
+            <a href="{% url 'exam_list' %}" class="text-muted text-sm">Cancel</a>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="text-muted" style="display: block; margin-top: 0.25rem;">{{ field.help_text|safe }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-error mt-2 text-sm" style="color: var(--danger);">
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                {% if form.instance.pk %}Save Updates{% else %}Add Exam Record{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        if(input.type !== 'submit' && input.type !== 'hidden') {
+            input.classList.add('form-control');
+        }
+    });
+
+    document.getElementById('id_subject').required = true;
+    document.getElementById('id_exam_date').required = true;
+</script>
+{% endblock %}

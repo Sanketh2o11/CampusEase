@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Timetable - CampusEase{% endblock %}
+{% block mobile_title %}Timetable{% endblock %}
+
+{% block content %}
+<style>
+.timetable-container { padding: var(--space-4); max-width: 1200px; margin: 0 auto; }
+
+.today-banner {
+    background: linear-gradient(135deg, var(--navy), var(--indigo));
+    color: white;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-card);
+    margin-bottom: var(--space-4);
+}
+.today-banner h3 { color: white; margin-bottom: 4px; }
+.today-banner .subjects { font-size: 1.1rem; opacity: 0.9; }
+
+.timetable-grid {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    overflow-x: auto;
+}
+
+.timetable-grid table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+.timetable-grid th, .timetable-grid td {
+    padding: 12px 16px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.timetable-grid th {
+    background: var(--navy);
+    color: white;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.timetable-grid th.today-col {
+    background: var(--indigo);
+}
+
+.timetable-grid td.today-col {
+    background: rgba(59, 91, 219, 0.06);
+}
+
+.timetable-grid td.period-label {
+    background: var(--bg-color);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    width: 60px;
+}
+
+.timetable-grid td.subject-cell {
+    font-weight: 500;
+    color: var(--navy);
+}
+
+.timetable-grid td.free-cell {
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.5;
+}
+
+.edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-3);
+    padding: 8px 16px;
+    background: var(--indigo);
+    color: white;
+    border-radius: var(--radius-input);
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.edit-link:hover { text-decoration: none; opacity: 0.9; }
+
+@media (max-width: 768px) {
+    .timetable-container { padding: var(--space-2); }
+    .today-banner { padding: var(--space-2) var(--space-3); }
+}
+</style>
+
+<div class="timetable-container">
+    {% if error %}
+        <div class="card text-center" style="padding: 3rem;">
+            <h3 class="text-muted">{{ error }}</h3>
+        </div>
+    {% else %}
+        {% if today_subjects %}
+        <div class="today-banner">
+            <h3>Today — {{ today_label }}</h3>
+            <div class="subjects">{{ today_subjects|join:" · " }}</div>
+        </div>
+        {% endif %}
+
+        <div class="timetable-grid">
+            <table>
+                <thead id="timetable-thead">
+                    <tr>
+                        <th>Period</th>
+                        {% for label in day_labels %}
+                            <th>{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rendered by JavaScript from gridData -->
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_cr %}
+            <a href="{% url 'timetable_edit' %}" class="edit-link">Edit Timetable</a>
+        {% endif %}
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Populate grid cells from Django context
+    const gridData = JSON.parse('{{ grid_data_json|escapejs }}');
+    const days = JSON.parse('{{ days_json|escapejs }}');
+    const periods = JSON.parse('{{ periods_json|escapejs }}');
+    const todayDay = '{{ today_day }}';
+
+    // Highlight today's column header
+    const theadCells = document.querySelectorAll('#timetable-thead th');
+    days.forEach((day, idx) => {
+        if (day === todayDay && theadCells[idx + 1]) {
+            theadCells[idx + 1].classList.add('today-col');
+        }
+    });
+
+    // Re-render table body with correct data
+    const tbody = document.querySelector('.timetable-grid tbody');
+    if (!tbody || !days.length) return;
+
+    tbody.innerHTML = '';
+    periods.forEach(p => {
+        const tr = document.createElement('tr');
+        const tdPeriod = document.createElement('td');
+        tdPeriod.className = 'period-label';
+        tdPeriod.textContent = `P${p}`;
+        tr.appendChild(tdPeriod);
+
+        days.forEach(day => {
+            const td = document.createElement('td');
+            const subjects = gridData[day] || [];
+            const subj = subjects[p - 1] || '';
+            td.textContent = subj || '—';
+            td.className = day === todayDay ? 'today-col' : '';
+            if (subj) {
+                td.classList.add('subject-cell');
+            } else {
+                td.classList.add('free-cell');
+            }
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+});
+</script>
+{% endblock %}

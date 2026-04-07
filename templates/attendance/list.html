@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance - CampusEase{% endblock %}
+{% block mobile_title %}Attendance{% endblock %}
+
+{% block content %}
+<style>
+.attendance-header {
+    text-align: center;
+    margin-bottom: var(--space-4);
+    background-color: var(--surface);
+    padding: var(--space-4);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+}
+.huge-percentage {
+    font-size: 4rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--navy);
+}
+.stats-summary {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+    font-size: 0.9rem;
+}
+.stats-summary .stat-item { text-align: center; }
+.stats-summary .stat-num {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.25rem;
+    display: block;
+}
+
+/* Week Strip */
+.week-strip-container {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.week-nav {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 1.25rem; padding: 4px 8px;
+    border-radius: var(--radius-input);
+    transition: background 150ms;
+}
+.week-nav:hover { background: var(--bg-color); color: var(--navy); }
+.week-days {
+    display: flex; flex: 1; justify-content: space-around;
+    overflow-x: auto; scrollbar-width: none;
+}
+.week-days::-webkit-scrollbar { display: none; }
+.week-day {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 12px; cursor: pointer; border-radius: var(--radius-card);
+    transition: background 150ms; min-width: 48px; gap: 4px;
+    border: none; background: none; font-family: var(--font-body);
+}
+.week-day:hover { background: var(--bg-color); }
+.week-day.active {
+    background: var(--indigo); color: white;
+}
+.week-day.active .day-label { color: white; }
+.week-day .day-label {
+    font-size: 0.75rem; font-weight: 500; color: var(--text-muted);
+    text-transform: uppercase;
+}
+.week-day .day-num {
+    font-size: 1rem; font-weight: 700;
+}
+.week-day .day-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--indigo); opacity: 0;
+}
+.week-day .day-dot.has-records { opacity: 1; }
+.week-day.active .day-dot { background: white; }
+
+/* Subject Cards */
+.subject-card {
+    background-color: var(--surface);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    box-shadow: var(--shadow-card);
+    border: 1px solid transparent;
+}
+.subject-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: var(--space-2);
+}
+.subject-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+.progress-bg {
+    width: 100%; height: 10px; background-color: var(--border-color);
+    border-radius: var(--radius-pill); overflow: hidden; margin-bottom: var(--space-1);
+}
+.progress-fill {
+    height: 100%; border-radius: var(--radius-pill); transition: width 0.6s ease-out;
+}
+.stats-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);
+}
+.needed-msg {
+    font-size: 0.85rem; font-weight: 500; margin-top: var(--space-1);
+    padding: 6px 10px; border-radius: var(--radius-input);
+}
+.needed-msg.warn { background: rgba(220,38,38,0.06); color: var(--red); }
+.needed-msg.safe { background: rgba(13,148,136,0.06); color: var(--teal); }
+.needed-msg.neutral { background: var(--bg-color); color: var(--text-muted); }
+.mark-btn {
+    margin-top: var(--space-2); padding: 8px 16px;
+    background: var(--indigo); color: white; border: none;
+    border-radius: var(--radius-input); cursor: pointer;
+    font-family: var(--font-body); font-weight: 500;
+    font-size: 0.85rem; float: right;
+    transition: all 150ms;
+}
+.mark-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* Bottom Sheet for marking */
+.mark-sheet-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); z-index: 300;
+    opacity: 0; visibility: hidden; transition: all 200ms;
+    backdrop-filter: blur(2px);
+}
+.mark-sheet-overlay.open { opacity: 1; visibility: visible; }
+.mark-sheet {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-radius: 16px 16px 0 0;
+    z-index: 301; transform: translateY(100%);
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    max-width: 500px; margin: 0 auto;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+}
+.mark-sheet.open { transform: translateY(0); }
+.mark-sheet .drag-handle {
+    width: 40px; height: 4px; background: var(--border-color);
+    border-radius: 2px; margin: 0 auto var(--space-3);
+}
+.mark-sheet h3 { margin-bottom: var(--space-1); }
+.mark-sheet .date-label { color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--space-3); }
+.radio-group { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3); }
+.radio-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border: 1px solid var(--border-color);
+    border-radius: var(--radius-input); cursor: pointer;
+    transition: all 150ms; font-weight: 500;
+}
+.radio-option:hover { border-color: var(--indigo); }
+.radio-option input[type="radio"] { accent-color: var(--indigo); width: 18px; height: 18px; }
+.radio-option.selected { border-color: var(--indigo); background: rgba(59,91,219,0.05); }
+
+@media (max-width: 768px) {
+    .huge-percentage { font-size: 3rem; }
+    .stats-summary { gap: var(--space-2); }
+    .mark-sheet { max-width: 100%; }
+}
+</style>
+
+<div class="page-container">
+    <!-- Overall Stats Header -->
+    <div class="attendance-header">
+        <div class="huge-percentage" id="overall-pct"
+            style="color: {% if overall_percentage >= 75 %}var(--teal){% elif overall_percentage >= 65 %}var(--amber){% else %}var(--red){% endif %};">
+            {{ overall_percentage }}%
+        </div>
+        <div class="stats-summary">
+            <div class="stat-item">
+                <span class="stat-num">{{ total_subjects }}</span>
+                <span class="text-muted text-sm">Subjects</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num text-teal">{{ subjects_safe }}</span>
+                <span class="text-muted text-sm">Safe</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num text-red">{{ subjects_at_risk }}</span>
+                <span class="text-muted text-sm">At Risk</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Week Strip Calendar -->
+    <div class="week-strip-container">
+        <button class="week-nav" id="week-prev" title="Previous week">&#9664;</button>
+        <div class="week-days" id="week-days"></div>
+        <button class="week-nav" id="week-next" title="Next week">&#9654;</button>
+    </div>
+
+    <!-- Subject Cards Grid -->
+    <div class="grid grid-cols-2" id="attendance-grid" style="grid-template-columns: repeat(2, 1fr);">
+        <div id="no-classes-msg" style="display:none; grid-column: 1 / -1; text-align: center; padding: 3rem;">
+            <div style="font-size:2.5rem; margin-bottom:var(--space-2);">🎉</div>
+            <h3 class="text-muted mb-2">No classes today!</h3>
+            <p class="text-sm text-muted">Enjoy your free day.</p>
+        </div>
+        {% for s in stats_list %}
+        <div class="subject-card" id="card-{{ s.id }}"
+             data-id="{{ s.id }}" data-subject="{{ s.subject }}"
+             data-pct="{{ s.percentage }}" data-attended="{{ s.attended }}" data-total="{{ s.total }}">
+            <div class="subject-header">
+                <div>
+                    <div class="subject-title">{{ s.subject }}</div>
+                    {% if s.percentage >= 75 %}
+                        <span class="badge badge-green">Safe</span>
+                    {% elif s.total > 0 and s.percentage >= 65 %}
+                        <span class="badge badge-amber">Watch</span>
+                    {% elif s.total > 0 %}
+                        <span class="badge badge-red">Critical</span>
+                    {% else %}
+                        <span class="badge badge-gray">New</span>
+                    {% endif %}
+                </div>
+                <div class="font-mono" style="font-size: 1.5rem; font-weight: 700;
+                    color: {% if s.percentage >= 75 %}var(--teal){% elif s.total > 0 and s.percentage >= 65 %}var(--amber){% elif s.total > 0 %}var(--red){% else %}var(--text-muted){% endif %};">
+                    {{ s.percentage }}%
+                </div>
+            </div>
+            <div class="progress-bg">
+                <div class="progress-fill" style="width: {{ s.percentage }}%;
+                    background-color: {% if s.percentage >= 75 %}var(--teal){% elif s.total > 0 and s.percentage >= 65 %}var(--amber){% elif s.total > 0 %}var(--red){% else %}var(--border-color){% endif %};"></div>
+            </div>
+            <div class="stats-row">
+                <span>{{ s.attended }} attended · {{ s.total }} total</span>
+            </div>
+            <div class="needed-msg {% if s.total == 0 %}neutral{% elif s.percentage < 75 %}warn{% else %}safe{% endif %}">
+                {{ s.message }}
+            </div>
+            <button type="button" class="mark-btn" data-id="{{ s.id }}" data-subject="{{ s.subject }}">Mark Today</button>
+        </div>
+        {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+            <h3 class="text-muted mb-2">No subjects found.</h3>
+            <p class="text-sm text-muted">Your CR needs to set up the timetable first.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Mark Attendance Bottom Sheet -->
+<div class="mark-sheet-overlay" id="mark-overlay"></div>
+<div class="mark-sheet" id="mark-sheet">
+    <div class="drag-handle"></div>
+    <h3 id="mark-subject-title">Subject</h3>
+    <div class="date-label" id="mark-date-label">Thursday March 14</div>
+    <div class="radio-group" id="mark-radio-group">
+        <label class="radio-option">
+            <input type="radio" name="mark-status" value="present">
+            Present
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="mark-status" value="absent">
+            Absent
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="mark-status" value="not_marked">
+            Not Marked (class didn't happen)
+        </label>
+    </div>
+    <button class="btn btn-primary" id="mark-save-btn">Save</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const csrfToken = '{{ csrf_token }}';
+    const todayStr = '{{ today|date:"Y-m-d" }}';
+    const daySubjects = JSON.parse('{{ day_subjects_json|escapejs }}');
+    let currentMonday = null;
+    let selectedDate = todayStr;
+    let markSubjectId = null;
+
+    // ---------- Day filtering ----------
+    const noClassesMsg = document.getElementById('no-classes-msg');
+
+    function getDayKey(dateStr) {
+        // Returns lowercase day name e.g. 'tuesday' from '2026-04-07'
+        const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        const d = new Date(dateStr + 'T00:00:00');
+        return days[d.getDay()];
+    }
+
+    function filterCardsByDay(dateStr) {
+        const dayKey = getDayKey(dateStr);
+        const scheduledSubjects = (daySubjects[dayKey] || []).map(s => s.toLowerCase());
+        const cards = document.querySelectorAll('.subject-card');
+        let visible = 0;
+
+        cards.forEach(card => {
+            const subject = card.dataset.subject.toLowerCase();
+            if (scheduledSubjects.length === 0 || scheduledSubjects.includes(subject)) {
+                card.style.display = '';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show "no classes" message only if timetable exists but this day has no subjects
+        const hasTimetable = Object.keys(daySubjects).length > 0;
+        if (hasTimetable && visible === 0) {
+            noClassesMsg.style.display = '';
+        } else {
+            noClassesMsg.style.display = 'none';
+        }
+
+        // Update mark buttons label
+        const d = new Date(dateStr + 'T00:00:00');
+        const isToday = dateStr === todayStr;
+        const label = isToday ? 'Mark Today' : `Mark ${d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'})}`;
+        document.querySelectorAll('.mark-btn').forEach(btn => btn.textContent = label);
+    }
+
+    // ---------- Week Strip ----------
+    const weekDaysEl = document.getElementById('week-days');
+
+    function loadWeek(dateStr) {
+        fetch(`/attendance/week/?date=${dateStr}`, {
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(r => r.json())
+        .then(data => {
+            currentMonday = data.monday;
+            weekDaysEl.innerHTML = '';
+            data.days.forEach(day => {
+                const btn = document.createElement('button');
+                btn.className = 'week-day' + (day.date === selectedDate ? ' active' : '');
+                btn.innerHTML = `
+                    <span class="day-label">${day.day_name}</span>
+                    <span class="day-num">${day.day_num}</span>
+                    <span class="day-dot ${day.has_records ? 'has-records' : ''}"></span>
+                `;
+                btn.addEventListener('click', () => {
+                    selectedDate = day.date;
+                    document.querySelectorAll('.week-day').forEach(w => w.classList.remove('active'));
+                    btn.classList.add('active');
+                    filterCardsByDay(selectedDate);
+                });
+                weekDaysEl.appendChild(btn);
+            });
+        });
+    }
+
+    loadWeek(todayStr);
+    filterCardsByDay(todayStr);  // show only today's subjects on load
+
+    document.getElementById('week-prev').addEventListener('click', () => {
+        if (!currentMonday) return;
+        const d = new Date(currentMonday);
+        d.setDate(d.getDate() - 7);
+        loadWeek(d.toISOString().slice(0, 10));
+    });
+    document.getElementById('week-next').addEventListener('click', () => {
+        if (!currentMonday) return;
+        const d = new Date(currentMonday);
+        d.setDate(d.getDate() + 7);
+        loadWeek(d.toISOString().slice(0, 10));
+    });
+
+    // ---------- Mark Bottom Sheet ----------
+    const overlay = document.getElementById('mark-overlay');
+    const sheet = document.getElementById('mark-sheet');
+    const titleEl = document.getElementById('mark-subject-title');
+    const dateLabelEl = document.getElementById('mark-date-label');
+    const saveBtn = document.getElementById('mark-save-btn');
+    const radios = document.querySelectorAll('input[name="mark-status"]');
+
+    // Style radio options on change
+    radios.forEach(r => {
+        r.addEventListener('change', () => {
+            document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+            r.closest('.radio-option').classList.add('selected');
+        });
+    });
+
+    function openMarkSheet(subjectId, subjectName) {
+        markSubjectId = subjectId;
+        titleEl.textContent = subjectName;
+        const d = new Date(selectedDate + 'T00:00:00');
+        dateLabelEl.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        radios.forEach(r => { r.checked = false; });
+        document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+        overlay.classList.add('open');
+        sheet.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMarkSheet() {
+        overlay.classList.remove('open');
+        sheet.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    overlay.addEventListener('click', closeMarkSheet);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMarkSheet(); });
+
+    document.querySelectorAll('.mark-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            openMarkSheet(btn.dataset.id, btn.dataset.subject);
+        });
+    });
+
+    saveBtn.addEventListener('click', () => {
+        const checked = document.querySelector('input[name="mark-status"]:checked');
+        if (!checked) return;
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        fetch('/attendance/mark/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                subject_id: parseInt(markSubjectId),
+                date: selectedDate,
+                status: checked.value,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                if (window.showToast) window.showToast(data.error, 'error');
+            } else {
+                // Update card live
+                const card = document.getElementById(`card-${markSubjectId}`);
+                if (card) {
+                    const pctEl = card.querySelector('.font-mono');
+                    pctEl.textContent = `${data.percentage}%`;
+                    const color = data.percentage >= 75 ? 'var(--teal)' : data.percentage >= 65 ? 'var(--amber)' : 'var(--red)';
+                    pctEl.style.color = color;
+
+                    const fill = card.querySelector('.progress-fill');
+                    fill.style.width = `${data.percentage}%`;
+                    fill.style.backgroundColor = color;
+
+                    const statsRow = card.querySelector('.stats-row span');
+                    statsRow.textContent = `${data.attended} attended · ${data.total} total`;
+
+                    const msgEl = card.querySelector('.needed-msg');
+                    msgEl.textContent = data.message;
+                    msgEl.className = 'needed-msg ' + (data.percentage >= 75 ? 'safe' : data.total > 0 ? 'warn' : 'neutral');
+                }
+
+                if (window.showToast) window.showToast('Attendance marked!', 'success');
+                // Reload week strip to show dot
+                loadWeek(selectedDate);
+            }
+            closeMarkSheet();
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        })
+        .catch(() => {
+            if (window.showToast) window.showToast('Network error', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        });
+    });
+});
+</script>
+{% endblock %}

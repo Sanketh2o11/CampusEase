@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - CampusEase{% endblock %}
+{% block mobile_title %}Home{% endblock %}
+
+{% block content %}
+<style>
+.dashboard-container { padding: var(--space-4); max-width: 1200px; margin: 0 auto; }
+
+/* Welcome Banner */
+.welcome-banner {
+    width: 100%; margin-bottom: var(--space-4); padding: var(--space-4);
+    background: linear-gradient(to right, var(--navy), var(--indigo));
+    color: white; border-radius: var(--radius-card);
+    display: flex; justify-content: space-between; align-items: center;
+    overflow: hidden; position: relative;
+    max-height: 400px; opacity: 1;
+    transition: max-height 400ms ease-in-out, opacity 400ms ease-in-out, padding 400ms ease-in-out, margin 400ms ease-in-out;
+}
+.welcome-banner.collapsed { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; margin-bottom: 0; border: none; }
+.welcome-greeting { font-family: var(--font-heading); font-size: 2.5rem; font-weight: 700; margin-bottom: var(--space-1); }
+.welcome-subtext { color: rgba(255, 255, 255, 0.8); font-size: 1.125rem; display: flex; align-items: center; gap: 12px; }
+.welcome-alert {
+    background-color: var(--amber); color: white; padding: 4px 12px;
+    border-radius: var(--radius-pill); font-size: 0.875rem; font-weight: 700;
+    display: inline-flex; align-items: center; margin-top: var(--space-2);
+}
+.welcome-owl { width: 100px; height: 100px; }
+
+/* Today Strip */
+.today-strip {
+    background-color: var(--surface); border-radius: var(--radius-input);
+    padding: var(--space-2) var(--space-3); box-shadow: var(--shadow-card);
+    display: flex; align-items: center; justify-content: center;
+    gap: var(--space-3); margin-bottom: var(--space-2);
+    font-size: 0.95rem; font-weight: 500; color: var(--text-muted);
+}
+.today-strip span { color: var(--navy); font-weight: 700; }
+.today-strip .divider { width: 4px; height: 4px; background-color: var(--border-color); border-radius: 50%; }
+
+/* 7-Day Ambient Strip (G3) */
+.ambient-strip {
+    background: var(--surface); border-radius: var(--radius-input);
+    padding: var(--space-2) var(--space-3); box-shadow: var(--shadow-card);
+    margin-bottom: var(--space-4); display: flex;
+    justify-content: space-around; align-items: center;
+}
+.ambient-day {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; min-width: 36px; padding: 4px 6px;
+    border-radius: var(--radius-input);
+}
+.ambient-day.today { background: rgba(59,91,219,0.08); }
+.ambient-day .a-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); }
+.ambient-day .a-num { font-size: 0.9rem; font-weight: 700; color: var(--navy); }
+.ambient-day.today .a-num { color: var(--indigo); }
+.ambient-day .a-icons { font-size: 0.65rem; height: 14px; display: flex; gap: 2px; }
+
+/* Tile link */
+.tile-link {
+    display: flex; align-items: center; gap: 12px; padding: var(--space-2);
+    background-color: var(--bg-color); border-radius: var(--radius-input);
+    color: var(--navy); font-weight: 600; transition: background-color 150ms ease;
+    text-decoration: none;
+}
+.tile-link:hover { background-color: rgba(59, 91, 219, 0.1); text-decoration: none; }
+
+.notice-row {
+    padding: var(--space-2) 0; border-bottom: 1px solid var(--border-color);
+    display: flex; flex-direction: column; gap: 4px;
+}
+.notice-row:last-child { border-bottom: none; }
+
+.quick-actions-grid { display: flex; flex-direction: column; gap: var(--space-2); }
+
+/* Exam Timeline */
+.exam-timeline-container {
+    background-color: var(--surface); border-radius: var(--radius-card);
+    padding: var(--space-3); box-shadow: var(--shadow-card); margin-top: var(--space-4);
+}
+.timeline-scroll {
+    overflow-x: auto; padding: var(--space-3) 0; scrollbar-width: none;
+}
+.timeline-scroll::-webkit-scrollbar { display: none; }
+.timeline-track {
+    display: flex; min-width: max-content; position: relative; padding: 0 var(--space-3);
+}
+.timeline-line {
+    position: absolute; top: 50%; left: 24px; right: 24px;
+    height: 2px; background-color: var(--border-color); z-index: 1;
+}
+.timeline-node {
+    position: relative; z-index: 2; background-color: var(--surface);
+    border: 2px solid var(--text-muted); border-radius: 50%;
+    width: 16px; height: 16px; margin-right: 120px; cursor: pointer; transition: all 150ms ease;
+}
+.timeline-node:last-child { margin-right: 0; }
+.timeline-node.upcoming {
+    border-color: var(--coral); background-color: var(--coral);
+    box-shadow: 0 0 0 4px rgba(232, 93, 4, 0.2);
+}
+.timeline-label {
+    position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
+    text-align: center; width: 100px; font-size: 0.8rem; font-weight: 500;
+}
+.timeline-node.upcoming .timeline-label { color: var(--navy); font-weight: 700; }
+
+/* Unread badge */
+.unread-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--red); color: white; font-size: 0.7rem; font-weight: 700;
+    border-radius: 50%; width: 20px; height: 20px; margin-left: 6px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container { padding: var(--space-2); }
+    .welcome-banner { flex-direction: column; text-align: center; padding: var(--space-3); }
+    .welcome-greeting { font-size: 1.8rem; }
+    .welcome-subtext { flex-direction: column; gap: 4px; }
+    .welcome-owl { display: none; }
+    .today-strip { flex-wrap: wrap; text-align: center; justify-content: center; padding: var(--space-2); }
+    .today-strip .divider { display: none; }
+}
+</style>
+
+<div class="dashboard-container">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" id="welcomeBanner">
+        <div>
+            <div class="welcome-greeting" id="dynamic-greeting">Hey, {{ user.full_name|default:user.email }}</div>
+            <div class="welcome-subtext">
+                {% if user.batch %}
+                    {{ user.batch.department }} Batch {{ user.batch.year }} &middot; SMVITM
+                {% else %}
+                    <span style="text-transform: capitalize;">{{ user.role }}</span>
+                {% endif %}
+            </div>
+            {% if attendance_alert and attendance_alert.status == 'red' %}
+                <div class="welcome-alert">{{ attendance_alert.subject }} needs attention</div>
+            {% endif %}
+        </div>
+        <div class="welcome-owl float-anim">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="25" y="40" width="50" height="50" rx="25" fill="var(--surface)"/>
+                <ellipse cx="50" cy="70" rx="15" ry="15" fill="var(--bg-color)"/>
+                <circle cx="38" cy="50" r="8" fill="var(--navy)"/>
+                <circle cx="62" cy="50" r="8" fill="var(--navy)"/>
+                <circle cx="38" cy="50" r="3" fill="white"/>
+                <circle cx="62" cy="50" r="3" fill="white"/>
+                <path d="M50 55 L55 62 L45 62 Z" fill="var(--amber)"/>
+                <path d="M25 55 Q 10 40 15 30" stroke="var(--surface)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <path d="M75 55 Q 90 40 85 30" stroke="var(--surface)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <path d="M25 35 L50 25 L75 35 L50 45 Z" fill="var(--surface)"/>
+                <rect x="45" y="40" width="10" height="10" fill="var(--surface)"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Today Strip -->
+    <div class="today-strip">
+        <div id="today-date-text">Loading date...</div>
+        <div class="divider"></div>
+        <div>
+            {% if days_until_next_exam is not None %}
+                Next exam in <span>{{ days_until_next_exam }}</span> day{{ days_until_next_exam|pluralize }}
+            {% else %}
+                No upcoming exams
+            {% endif %}
+        </div>
+        <div class="divider"></div>
+        <div>
+            <span>{{ tracked_subjects_count|default:"0" }}</span> subjects tracked
+        </div>
+        {% if unread_notices_count and unread_notices_count > 0 %}
+        <div class="divider"></div>
+        <div>
+            <span class="text-indigo">{{ unread_notices_count }}</span> unread notice{{ unread_notices_count|pluralize }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 7-Day Ambient Strip (G3) -->
+    <div class="ambient-strip">
+        {% for day in week_events %}
+        <div class="ambient-day {% if day.is_today %}today{% endif %}">
+            <span class="a-label">{{ day.day_short }}</span>
+            <span class="a-num">{{ day.day_num }}</span>
+            <span class="a-icons">
+                {% if day.has_exam %}&#128308;{% endif %}
+                {% if day.has_deadline %}&#128227;{% endif %}
+                {% if day.is_today %}&#128197;{% endif %}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 3-Column Grid -->
+    <div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
+
+        <!-- Col 1: Attendance Health -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="card-title">Attendance</h3>
+                {% if tracked_subjects_count > 6 %}
+                <button onclick="window.openDrawer('attendance-all-drawer')"
+                    style="background:none;border:none;color:var(--indigo);font-size:0.8rem;font-weight:600;cursor:pointer;padding:0;">
+                    View All →
+                </button>
+                {% endif %}
+            </div>
+
+            {% if attendance_records and attendance_records|length > 0 %}
+                <!-- 3-col × up-to-2-row grid, worst first -->
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px 4px; margin-bottom:var(--space-3);">
+                {% for att in attendance_records %}
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <div class="ring-chart" style="width:70px;height:70px;">
+                            <svg width="70" height="70" viewBox="0 0 100 100">
+                                <circle class="ring-bg" cx="50" cy="50" r="40"/>
+                                <circle class="ring-progress" cx="50" cy="50" r="40"
+                                    stroke-dasharray="251" stroke-dashoffset="251"
+                                    data-pct="{{ att.percentage }}"
+                                    style="stroke:{% if att.percentage >= 75 %}var(--teal){% elif att.percentage >= 65 %}var(--amber){% else %}var(--red){% endif %};"/>
+                            </svg>
+                            <div class="ring-text" style="font-size:0.8rem;top:50%;transform:translateY(-50%);">{{ att.percentage }}%</div>
+                        </div>
+                        <div style="font-size:0.68rem;font-weight:600;text-align:center;color:var(--text-muted);line-height:1.2;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ att.subject|truncatechars:9 }}</div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-muted" style="margin-bottom:var(--space-3);">No attendance tracked yet.</p>
+            {% endif %}
+
+            <!-- Summary line -->
+            {% if attendance_warnings %}
+                <p class="text-sm text-red font-medium text-center pt-3" style="border-top:1px solid var(--border-color);">
+                    {{ attendance_warnings|length }} subject{{ attendance_warnings|length|pluralize }} need{{ attendance_warnings|length|pluralize:"s," }} attention
+                </p>
+            {% else %}
+                <p class="text-sm text-teal font-medium text-center pt-3" style="border-top:1px solid var(--border-color);">All subjects safe</p>
+            {% endif %}
+        </div>
+
+        <!-- Col 2: Active Notices -->
+        <div class="card">
+            <h3 class="card-title mb-4">
+                Active Notices
+                {% if unread_notices_count and unread_notices_count > 0 %}
+                    <span class="unread-badge">{{ unread_notices_count }}</span>
+                {% endif %}
+            </h3>
+            {% if recent_notices %}
+                <div>
+                    {% for notice in recent_notices|slice:":3" %}
+                        <div class="notice-row" style="border-left: 3px solid
+                            {% if notice.notice_type == 'urgent' %}var(--red){% elif notice.notice_type == 'exam' %}var(--coral){% elif notice.notice_type == 'event' %}var(--teal){% elif notice.notice_type == 'announcement' %}var(--indigo){% else %}var(--text-muted){% endif %};
+                            padding-left: 12px; margin-bottom: 8px; border-bottom: none; background: var(--bg-color); border-radius: 4px;">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-sm" style="color: var(--navy);">{{ notice.title }}</span>
+                                {% if notice.deadline %}
+                                    <span class="badge badge-red">{{ notice.deadline|date:"M d" }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 pt-2" style="border-top: 1px solid var(--border-color);">
+                    <a href="{% url 'notice_list' %}" class="text-sm font-medium">View all notices &rarr;</a>
+                </div>
+            {% else %}
+                <p class="text-sm text-muted">No active notices.</p>
+            {% endif %}
+        </div>
+
+        <!-- Col 3: Quick Actions -->
+        <div class="card">
+            <h3 class="card-title mb-4">Quick Actions</h3>
+            <div class="quick-actions-grid">
+                <a href="{% url 'material_list' %}" class="tile-link">
+                    <span style="font-size: 1.25rem;">&#128206;</span> Upload a note
+                </a>
+                <a href="{% url 'attendance_list' %}" class="tile-link">
+                    <span style="font-size: 1.25rem;">+</span> Log attendance
+                </a>
+                <a href="{% url 'lostfound_list' %}" class="tile-link">
+                    <span style="font-size: 1.25rem;">&#128226;</span> Report lost item
+                </a>
+                <a href="{% url 'timetable_view' %}" class="tile-link">
+                    <span style="font-size: 1.25rem;">&#128197;</span> View timetable
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Exam Timeline -->
+    <div class="exam-timeline-container">
+        <h3 class="card-title mb-2">Exam Timeline</h3>
+        <div class="timeline-scroll">
+            <div class="timeline-track" id="timelineTrack">
+                <div class="timeline-line"></div>
+            </div>
+        </div>
+        {% if not exam_timeline %}
+        <div class="text-center" style="padding: var(--space-3);">
+            <p class="text-sm text-muted">No exams scheduled yet. CR will post the schedule here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Time-based Greeting
+    const hour = new Date().getHours();
+    let greeting = "Good evening";
+    if (hour < 12) greeting = "Good morning";
+    else if (hour < 17) greeting = "Good afternoon";
+    const greetingEl = document.getElementById('dynamic-greeting');
+    if (greetingEl) greetingEl.innerText = `${greeting}, {{ user.full_name|default:user.email|escapejs }}`;
+
+    // 2. Today Date Text
+    const todayEl = document.getElementById('today-date-text');
+    if (todayEl) {
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        todayEl.innerText = new Intl.DateTimeFormat('en-US', options).format(new Date());
+    }
+
+    // 3. Welcome Banner Collapse
+    const banner = document.getElementById('welcomeBanner');
+    if (banner && sessionStorage.getItem('welcomeShown') !== 'true') {
+        setTimeout(() => {
+            banner.classList.add('collapsed');
+            sessionStorage.setItem('welcomeShown', 'true');
+        }, 4000);
+    } else if (banner) {
+        banner.style.display = 'none';
+        banner.classList.add('collapsed');
+    }
+
+    // 4. SVG Ring Chart Animation
+    setTimeout(() => {
+        document.querySelectorAll('.ring-progress').forEach(circle => {
+            const pct = parseFloat(circle.getAttribute('data-pct')) || 0;
+            const c = Math.PI * 80;
+            const offset = ((100 - pct) / 100) * c;
+            circle.style.strokeDashoffset = offset;
+        });
+    }, 100);
+
+    // 5. Exam Timeline from BatchExam data
+    const examTimeline = JSON.parse('{{ exam_timeline_json|escapejs }}');
+    const track = document.getElementById('timelineTrack');
+    if (track && examTimeline.length > 0) {
+        examTimeline.forEach(exam => {
+            const node = document.createElement('div');
+            node.className = 'timeline-node' + (exam.is_past ? '' : ' upcoming');
+            node.title = `${exam.name} — ${exam.subject}`;
+            const label = document.createElement('div');
+            label.className = 'timeline-label' + (exam.is_past ? ' text-muted' : '');
+            label.textContent = exam.date_display;
+            node.appendChild(label);
+            track.appendChild(node);
+        });
+    }
+});
+</script>
+
+{{ attendance_all_json|json_script:"attendance-all-data" }}
+
+<!-- View All Attendance Drawer -->
+<div class="drawer-overlay" id="attendance-all-drawer-overlay"></div>
+<div class="drawer right-drawer" id="attendance-all-drawer">
+    <div class="drawer-header">
+        <h3 style="margin:0;">All Subjects</h3>
+        <button type="button" class="btn-icon" data-close-drawer="attendance-all-drawer">&#10005;</button>
+    </div>
+    <div class="drawer-body" id="attendance-all-body">
+        <!-- Populated by JS -->
+    </div>
+</div>
+
+<script>
+(function() {
+    const allData = JSON.parse(document.getElementById('attendance-all-data').textContent);
+
+    function colorFor(pct) {
+        if (pct >= 75) return 'var(--teal)';
+        if (pct >= 65) return 'var(--amber)';
+        return 'var(--red)';
+    }
+
+    function renderAttendanceDrawer() {
+        const body = document.getElementById('attendance-all-body');
+        if (!body || !allData.length) return;
+
+        body.innerHTML = allData.map(s => {
+            const color = colorFor(s.percentage);
+            const pct = s.percentage;
+            return `
+            <div style="margin-bottom:var(--space-3);padding-bottom:var(--space-3);border-bottom:1px solid var(--border-color);">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+                    <span style="font-weight:700;font-size:0.95rem;">${s.subject}</span>
+                    <span style="font-family:var(--font-mono);font-weight:700;font-size:1rem;color:${color};">${pct}%</span>
+                </div>
+                <div style="height:8px;background:var(--border-color);border-radius:99px;overflow:hidden;margin-bottom:4px;">
+                    <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;transition:width 0.6s ease-out;"></div>
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">${s.attended} / ${s.total} classes attended</div>
+            </div>`;
+        }).join('');
+    }
+
+    // Render when drawer opens
+    const drawerEl = document.getElementById('attendance-all-drawer');
+    if (drawerEl) {
+        const observer = new MutationObserver(() => {
+            if (drawerEl.classList.contains('open')) renderAttendanceDrawer();
+        });
+        observer.observe(drawerEl, { attributes: true, attributeFilter: ['class'] });
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+
+{% block title %}Exams - CampusEase{% endblock %}
+{% block mobile_title %}Exams{% endblock %}
+
+{% block content %}
+<style>
+/* Month Calendar */
+.month-calendar {
+    background: var(--surface); border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card); padding: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+.cal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: var(--space-2);
+}
+.cal-header h3 { margin: 0; font-size: 1.1rem; }
+.cal-nav {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    font-size: 1.1rem; padding: 4px 10px; border-radius: var(--radius-input);
+    transition: background 150ms;
+}
+.cal-nav:hover { background: var(--bg-color); color: var(--navy); }
+.cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; gap: 2px;
+}
+.cal-grid .cal-day-header {
+    font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+    padding: 6px 0;
+}
+.cal-grid .cal-day {
+    padding: 6px 0; border-radius: 50%; position: relative;
+    font-size: 0.85rem; cursor: default; display: flex;
+    flex-direction: column; align-items: center; min-height: 36px;
+    justify-content: center;
+}
+.cal-grid .cal-day.today {
+    background: var(--indigo); color: white; font-weight: 700;
+    border-radius: 50%;
+}
+.cal-grid .cal-day.past { opacity: 0.4; }
+.cal-grid .cal-day .exam-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    position: absolute; bottom: 2px;
+}
+.cal-grid .cal-day .exam-dot.internal { background: var(--red); }
+.cal-grid .cal-day .exam-dot.external { background: var(--teal); }
+.cal-grid .cal-day.has-exam { cursor: pointer; }
+.cal-grid .cal-day.has-exam:hover { background: var(--bg-color); border-radius: 50%; }
+
+/* Tooltip */
+.cal-tooltip {
+    position: absolute; z-index: 100; background: var(--surface);
+    border-radius: var(--radius-card); box-shadow: var(--shadow-hover);
+    padding: var(--space-2); min-width: 180px; font-size: 0.85rem;
+    display: none; text-align: left;
+}
+.cal-tooltip.open { display: block; }
+.cal-tooltip .tt-subject { font-weight: 700; color: var(--navy); }
+.cal-tooltip .tt-name { color: var(--text-muted); }
+.cal-tooltip .tt-scroll {
+    color: var(--indigo); cursor: pointer; font-weight: 500;
+    margin-top: 4px; font-size: 0.8rem;
+}
+
+.cal-legend {
+    display: flex; gap: var(--space-3); justify-content: center;
+    margin-top: var(--space-2); font-size: 0.8rem; color: var(--text-muted);
+}
+.cal-legend span { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* Exam Cards */
+.exam-section-title {
+    font-family: var(--font-heading); font-weight: 700; color: var(--navy);
+    margin: var(--space-4) 0 var(--space-2); font-size: 1.1rem;
+    border-bottom: 2px solid var(--border-color); padding-bottom: var(--space-1);
+}
+
+.exam-card {
+    background: var(--surface); border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card); padding: var(--space-3);
+    margin-bottom: var(--space-2); border-left: 4px solid var(--border-color);
+    position: relative;
+}
+.exam-card.internal { border-left-color: var(--red); }
+.exam-card.external { border-left-color: var(--teal); }
+.exam-card.past { opacity: 0.7; }
+.exam-card .exam-name {
+    font-family: var(--font-heading); font-weight: 700;
+    font-size: 1.05rem; color: var(--navy);
+}
+.exam-card .exam-subject { color: var(--text-muted); font-size: 0.9rem; }
+.exam-card .exam-date {
+    font-family: var(--font-mono); font-size: 0.85rem;
+    color: var(--coral); font-weight: 600; margin-top: 4px;
+}
+.exam-card .syllabus {
+    margin-top: var(--space-1); font-size: 0.85rem; color: var(--text-muted);
+    background: var(--bg-color); padding: 8px 12px; border-radius: var(--radius-input);
+}
+
+/* Personal result inline */
+.my-result {
+    margin-top: var(--space-2); padding: var(--space-2);
+    background: rgba(13,148,136,0.05); border: 1px solid rgba(13,148,136,0.15);
+    border-radius: var(--radius-input);
+}
+.my-result .result-score {
+    font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem;
+    color: var(--teal);
+}
+.result-btn {
+    background: none; border: 1px solid var(--border-color);
+    padding: 6px 14px; border-radius: var(--radius-input);
+    cursor: pointer; font-family: var(--font-body); font-weight: 500;
+    font-size: 0.85rem; transition: all 150ms; color: var(--indigo);
+    margin-top: var(--space-2);
+}
+.result-btn:hover { border-color: var(--indigo); background: rgba(59,91,219,0.05); }
+
+/* Result drawer */
+.result-sheet-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); z-index: 300;
+    opacity: 0; visibility: hidden; transition: all 200ms;
+    backdrop-filter: blur(2px);
+}
+.result-sheet-overlay.open { opacity: 1; visibility: visible; }
+.result-sheet {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-radius: 16px 16px 0 0;
+    z-index: 301; transform: translateY(100%);
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    max-width: 500px; margin: 0 auto;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+}
+.result-sheet.open { transform: translateY(0); }
+.result-sheet .drag-handle {
+    width: 40px; height: 4px; background: var(--border-color);
+    border-radius: 2px; margin: 0 auto var(--space-3);
+}
+</style>
+
+<div class="page-container">
+    <div class="flex justify-between items-center mb-4">
+        <h2>Exams</h2>
+    </div>
+
+    <!-- Month Calendar (G2) -->
+    <div class="month-calendar">
+        <div class="cal-header">
+            <button class="cal-nav" id="cal-prev">&#9664;</button>
+            <h3 id="cal-month-label">Loading...</h3>
+            <button class="cal-nav" id="cal-next">&#9654;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend">
+            <span><span class="legend-dot" style="background: var(--red);"></span> Internal</span>
+            <span><span class="legend-dot" style="background: var(--teal);"></span> External</span>
+        </div>
+    </div>
+
+    <!-- CR Add Exam FAB -->
+    {% if user.is_cr %}
+    <button class="fab" onclick="window.openDrawer('exam-drawer')" title="Add Exam">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" width="24" height="24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+    {% endif %}
+
+    <!-- Batch Exam Schedule -->
+    <div id="exam-cards">
+        {% if batch_exams %}
+        {% regroup batch_exams by exam_date.month as month_list %}
+        {% for month_group in month_list %}
+        <div class="exam-section-title">
+            {% with first_exam=month_group.list.0 %}
+            {{ first_exam.exam_date|date:"F Y" }}
+            {% endwith %}
+        </div>
+        {% for exam in month_group.list %}
+        <div class="exam-card {{ exam.exam_type }} {% if exam.is_past %}past{% endif %}" id="exam-card-{{ exam.pk }}">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="exam-name">{{ exam.exam_name }}</div>
+                    <div class="exam-subject">{{ exam.subject }}</div>
+                    <div class="exam-date">{{ exam.exam_date|date:"F d, Y" }}</div>
+                </div>
+                <span class="badge {% if exam.exam_type == 'internal' %}badge-red{% else %}badge-green{% endif %}">{{ exam.get_exam_type_display }}</span>
+            </div>
+            {% if exam.syllabus %}
+            <div class="syllabus">{{ exam.syllabus }}</div>
+            {% endif %}
+
+            <!-- Personal result inline -->
+            {% if personal_results and exam.pk in personal_results %}
+            <div class="my-result" id="result-{{ exam.pk }}">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium">My Result</span>
+                    <span class="result-score">{% for r_id, r in personal_results.items %}{% if r_id == exam.pk %}{{ r.score }}{% endif %}{% endfor %}</span>
+                </div>
+            </div>
+            {% elif exam.is_past %}
+            <button type="button" class="result-btn" onclick="openResultSheet({{ exam.pk }}, '{{ exam.exam_name|escapejs }}')">Add My Result</button>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+        {% else %}
+        <div class="card text-center" style="padding: 3rem;">
+            <h3 class="text-muted mb-2">No exams scheduled yet.</h3>
+            <p class="text-sm text-muted">{% if user.is_cr %}Click + to add the first exam.{% else %}CR will post the schedule here.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CR Add Exam Drawer -->
+{% if user.is_cr %}
+<div class="drawer-overlay" id="exam-drawer-overlay"></div>
+<div class="drawer right-drawer" id="exam-drawer">
+    <div class="drawer-header">
+        <h3 style="margin: 0;">Add Exam</h3>
+        <button type="button" class="btn-icon" data-close-drawer="exam-drawer">&#10005;</button>
+    </div>
+    <div class="drawer-body">
+        <form action="{% url 'batch_exam_create' %}" method="post">
+            {% csrf_token %}
+            <div class="form-floating">
+                <input type="text" name="subject" placeholder=" " required>
+                <label>Subject</label>
+            </div>
+            <div class="form-floating">
+                <input type="text" name="exam_name" placeholder=" " required>
+                <label>Exam Name</label>
+            </div>
+            <div class="form-floating">
+                <select name="exam_type" required>
+                    <option value="internal">Internal</option>
+                    <option value="external">External</option>
+                </select>
+                <label style="transform: translateY(-10px) scale(0.75);">Type</label>
+            </div>
+            <div class="form-floating">
+                <input type="date" name="exam_date" placeholder=" " required>
+                <label>Date</label>
+            </div>
+            <div class="form-floating">
+                <textarea name="syllabus" placeholder=" " style="height: 80px;"></textarea>
+                <label>Syllabus (optional)</label>
+            </div>
+            <button type="submit" class="btn btn-primary mt-4">Add Exam</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Result Bottom Sheet -->
+<div class="result-sheet-overlay" id="result-overlay"></div>
+<div class="result-sheet" id="result-sheet">
+    <div class="drag-handle"></div>
+    <h3 id="result-exam-title">Add My Result</h3>
+    <div class="form-floating">
+        <input type="text" id="result-score" placeholder=" ">
+        <label>Score (e.g. 38/50)</label>
+    </div>
+    <div class="form-floating">
+        <textarea id="result-notes" placeholder=" " style="height: 80px;"></textarea>
+        <label>Personal Notes</label>
+    </div>
+    <button class="btn btn-primary" id="result-save-btn">Save Result</button>
+</div>
+
+{{ exam_dates_json|json_script:"exam-dates-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const csrfToken = '{{ csrf_token }}';
+    const examDates = JSON.parse(document.getElementById('exam-dates-data').textContent);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    let calYear = today.getFullYear();
+    let calMonth = today.getMonth();
+
+    function renderCalendar() {
+        const label = document.getElementById('cal-month-label');
+        const grid = document.getElementById('cal-grid');
+        const monthDate = new Date(calYear, calMonth, 1);
+        label.textContent = monthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+        let html = '';
+        ['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(d => html += `<div class="cal-day-header">${d}</div>`);
+
+        const firstDay = (monthDate.getDay() + 6) % 7;
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) html += '<div></div>';
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const cellDate = new Date(calYear, calMonth, d);
+            const isPast = cellDate < today;
+            const isToday = dateStr === todayStr;
+
+            const matchingExams = examDates.filter(e => e.date === dateStr);
+            const hasExam = matchingExams.length > 0;
+            const examType = hasExam ? matchingExams[0].type : '';
+
+            let classes = 'cal-day';
+            if (isPast) classes += ' past';
+            if (isToday) classes += ' today';
+            if (hasExam) classes += ' has-exam';
+
+            html += `<div class="${classes}" ${hasExam ? `onclick="showCalTooltip(event, '${dateStr}')"` : ''}>
+                ${d}
+                ${hasExam ? `<span class="exam-dot ${examType}"></span>` : ''}
+            </div>`;
+        }
+
+        grid.innerHTML = html;
+    }
+
+    renderCalendar();
+    document.getElementById('cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
+    document.getElementById('cal-next').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
+
+    // Tooltip
+    window.showCalTooltip = function(e, dateStr) {
+        document.querySelectorAll('.cal-tooltip').forEach(t => t.remove());
+        const exams = examDates.filter(ex => ex.date === dateStr);
+        if (!exams.length) return;
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'cal-tooltip open';
+        let ttHtml = '';
+        exams.forEach(ex => {
+            ttHtml += `<div class="tt-subject">${ex.subject}</div>`;
+            ttHtml += `<div class="tt-name">${ex.name}</div>`;
+            ttHtml += `<div class="tt-scroll" onclick="document.getElementById('exam-card-${ex.id}').scrollIntoView({behavior:'smooth',block:'center'})">Scroll to exam &#8595;</div>`;
+        });
+        tooltip.innerHTML = ttHtml;
+        tooltip.style.left = '50%';
+        tooltip.style.transform = 'translateX(-50%)';
+        tooltip.style.top = '100%';
+        e.target.closest('.cal-day').style.position = 'relative';
+        e.target.closest('.cal-day').appendChild(tooltip);
+
+        setTimeout(() => {
+            document.addEventListener('click', function closeTooltip(ev) {
+                if (!tooltip.contains(ev.target)) { tooltip.remove(); document.removeEventListener('click', closeTooltip); }
+            });
+        }, 10);
+    };
+
+    // Result bottom sheet
+    const resultOverlay = document.getElementById('result-overlay');
+    const resultSheet = document.getElementById('result-sheet');
+    let resultExamId = null;
+
+    window.openResultSheet = function(examId, examName) {
+        resultExamId = examId;
+        document.getElementById('result-exam-title').textContent = examName;
+        document.getElementById('result-score').value = '';
+        document.getElementById('result-notes').value = '';
+        resultOverlay.classList.add('open');
+        resultSheet.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    function closeResultSheet() {
+        resultOverlay.classList.remove('open');
+        resultSheet.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    resultOverlay.addEventListener('click', closeResultSheet);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeResultSheet(); });
+
+    document.getElementById('result-save-btn').addEventListener('click', () => {
+        const btn = document.getElementById('result-save-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        fetch(`/exams/${resultExamId}/result/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+                score: document.getElementById('result-score').value,
+                notes: document.getElementById('result-notes').value,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.error) {
+                const card = document.getElementById(`exam-card-${resultExamId}`);
+                if (card) {
+                    // Remove the "Add My Result" button
+                    const existingBtn = card.querySelector('.result-btn');
+                    if (existingBtn) existingBtn.remove();
+
+                    // Add result inline
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = 'my-result';
+                    resultDiv.innerHTML = `<div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">My Result</span>
+                        <span class="result-score">${data.score}</span>
+                    </div>`;
+                    card.appendChild(resultDiv);
+                }
+                if (window.showToast) window.showToast('Result saved!', 'success');
+            }
+            closeResultSheet();
+            btn.disabled = false;
+            btn.textContent = 'Save Result';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = 'Save Result';
+        });
+    });
+});
+</script>
+{% endblock %}

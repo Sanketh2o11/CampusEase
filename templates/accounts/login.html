@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - CampusEase{% endblock %}
+
+{% block content %}
+<style>
+  /* Login specific styles */
+  .login-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .login-left {
+    flex: 6;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4);
+    background-color: var(--surface);
+  }
+  
+  .login-right {
+    flex: 4;
+    background: linear-gradient(135deg, var(--bg-color) 0%, #E0E7FF 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .login-brand {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--navy);
+    margin-bottom: auto;
+  }
+  
+  .login-form-container {
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+    padding-bottom: 20vh; /* Adjust vertical centering */
+  }
+
+  .login-headline {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-4);
+    color: var(--navy);
+  }
+
+  .mt-4 { margin-top: 1rem; }
+  .text-right { text-align: right; }
+  
+  .forgot-password {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+  
+  .forgot-password:hover {
+    color: var(--navy);
+    text-decoration: underline;
+  }
+
+  /* Password field wrapper to add Eye toggle */
+  .password-wrapper {
+    position: relative;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 16px;
+    top: 18px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    z-index: 10;
+  }
+
+  .password-toggle:hover {
+    color: var(--navy);
+  }
+
+  /* Error state shake */
+  .form-error {
+    border-color: var(--red) !important;
+  }
+
+  @media (max-width: 768px) {
+    .login-layout { flex-direction: column; }
+    .login-right { display: none; /* Spec: Split disappears, owl moves to top */ }
+    .login-left { padding: var(--space-3); justify-content: center; }
+    .login-form-container { padding-bottom: 0; margin-top: var(--space-4); }
+    .mobile-owl {
+      display: flex;
+      justify-content: center;
+      margin-bottom: var(--space-3);
+    }
+    .mobile-owl svg { width: 80px; height: 80px; }
+  }
+
+  /* Hide mobile owl on desktop */
+  @media (min-width: 769px) {
+    .mobile-owl { display: none; }
+  }
+</style>
+
+<div class="login-layout">
+  <div class="login-left">
+    <div class="login-brand">CampusEase</div>
+    
+    <div class="login-form-container" id="login-form-box">
+      <div class="mobile-owl float-anim">
+        <!-- SVG Owl for Mobile -->
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="25" y="40" width="50" height="50" rx="25" fill="var(--indigo)"/>
+          <ellipse cx="50" cy="70" rx="15" ry="15" fill="var(--bg-color)"/>
+          <circle cx="38" cy="50" r="8" fill="white"/>
+          <circle cx="62" cy="50" r="8" fill="white"/>
+          <circle cx="38" cy="50" r="3" fill="var(--navy)"/>
+          <circle cx="62" cy="50" r="3" fill="var(--navy)"/>
+          <path d="M50 55 L55 62 L45 62 Z" fill="var(--amber)"/>
+          <path d="M25 55 Q 15 65 25 80" stroke="var(--indigo)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M75 55 Q 85 65 75 80" stroke="var(--indigo)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <!-- Minor Grad Cap adjustments for tight space -->
+          <path d="M25 35 L50 25 L75 35 L50 45 Z" fill="var(--navy)"/>
+          <rect x="45" y="40" width="10" height="10" fill="var(--navy)"/>
+        </svg>
+      </div>
+
+      <h1 class="login-headline">Hey, welcome back.</h1>
+
+      {% if form.non_field_errors %}
+        <div class="text-red text-sm mb-4 shake font-medium">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+
+      <form method="post" id="loginForm">
+        {% csrf_token %}
+        
+        <!-- Render explicit fields for exact control -->
+        
+        <!-- Email/Username -->
+        <div class="form-floating {% if form.username.errors %}shake{% endif %}">
+            <input type="text" name="username" id="id_username" placeholder=" " autofocus 
+                   class="{% if form.username.errors %}form-error{% endif %}">
+            <label for="id_username">Email or Username</label>
+        </div>
+        {% if form.username.errors %}
+            <div class="text-red text-sm mt-1 mb-2">{{ form.username.errors.0 }}</div>
+        {% endif %}
+
+        <!-- Password -->
+        <div class="form-floating password-wrapper {% if form.password.errors %}shake{% endif %}">
+            <input type="password" name="password" id="id_password" placeholder=" " 
+                   class="{% if form.password.errors %}form-error{% endif %}">
+            <label for="id_password">Password</label>
+            <button type="button" class="password-toggle" id="togglePassword">
+                <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+            </button>
+        </div>
+        {% if form.password.errors %}
+            <div class="text-red text-sm mt-1 mb-2">{{ form.password.errors.0 }}</div>
+        {% endif %}
+
+        <div class="flex justify-between items-center mb-4 mt-4">
+            <label class="toggle-switch">
+                <input type="checkbox" name="remember_me" id="rememberMe">
+                <span class="toggle-slider"></span>
+                <span class="text-sm font-medium">Keep me signed in</span>
+            </label>
+            <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary text-lg" style="padding: 16px;">Sign In</button>
+      </form>
+
+      <div class="mt-4">
+        <p class="text-muted text-sm">New here? <a href="{% url 'register' %}">Join your batch &rarr;</a></p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="login-right">
+      <!-- Mascot Owl with float animation -->
+      <svg class="float-anim" width="240" height="240" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Body -->
+          <rect x="25" y="40" width="50" height="50" rx="25" fill="var(--indigo)"/>
+          <!-- Belly -->
+          <ellipse cx="50" cy="70" rx="15" ry="15" fill="var(--surface)"/>
+          <!-- Eyes -->
+          <circle cx="38" cy="50" r="8" fill="white"/>
+          <circle cx="62" cy="50" r="8" fill="white"/>
+          <!-- Pupils -->
+          <circle cx="38" cy="50" r="3" fill="var(--navy)"/>
+          <circle cx="62" cy="50" r="3" fill="var(--navy)"/>
+          <!-- Beak -->
+          <path d="M50 55 L55 62 L45 62 Z" fill="var(--amber)"/>
+          <!-- Wings -->
+          <path d="M25 55 Q 15 65 25 80" stroke="var(--indigo)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M75 55 Q 85 65 75 80" stroke="var(--indigo)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <!-- Grad Cap -->
+          <path d="M25 35 L50 25 L75 35 L50 45 Z" fill="var(--navy)"/>
+          <rect x="45" y="40" width="10" height="10" fill="var(--navy)"/>
+          <line x1="75" y1="35" x2="75" y2="45" stroke="var(--amber)" stroke-width="2"/>
+          <circle cx="75" cy="46" r="2" fill="var(--amber)"/>
+      </svg>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Determine if we should add shake to the whole form container (non field errors)
+    const hasErrors = document.querySelector('.text-red');
+    if (hasErrors) {
+        document.getElementById('login-form-box').classList.add('shake');
+    }
+
+    // Password toggle
+    const toggleButton = document.getElementById('togglePassword');
+    const passInput = document.getElementById('id_password');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    // Remember toggle state if there was an error submission
+    if(sessionStorage.getItem('passVisible') === 'true') {
+        passInput.type = 'text';
+        updateEyeIcon(true);
+    }
+
+    toggleButton.addEventListener('click', () => {
+        const isVisible = passInput.type === 'text';
+        passInput.type = isVisible ? 'password' : 'text';
+        sessionStorage.setItem('passVisible', !isVisible);
+        updateEyeIcon(!isVisible);
+    });
+
+    function updateEyeIcon(visible) {
+        if(visible) {
+            eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        } else {
+            eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+    }
+});
+</script>
+{% endblock %}

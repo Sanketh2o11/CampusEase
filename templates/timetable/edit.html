@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Timetable - CampusEase{% endblock %}
+{% block mobile_title %}Edit Timetable{% endblock %}
+
+{% block content %}
+<style>
+.edit-container { padding: var(--space-4); max-width: 1200px; margin: 0 auto; }
+
+.edit-grid {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    overflow-x: auto;
+}
+
+.edit-grid table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+.edit-grid th, .edit-grid td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.edit-grid th {
+    background: var(--navy);
+    color: white;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 12px 8px;
+}
+
+.edit-grid td.period-label {
+    background: var(--bg-color);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    width: 60px;
+}
+
+.edit-grid input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-input);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    text-align: center;
+    transition: border-color 150ms ease;
+}
+
+.edit-grid input[type="text"]:focus {
+    outline: none;
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 2px rgba(59, 91, 219, 0.1);
+}
+
+.save-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-3);
+    gap: var(--space-2);
+}
+
+@media (max-width: 768px) {
+    .edit-container { padding: var(--space-2); }
+}
+</style>
+
+<div class="edit-container">
+    <div class="flex justify-between items-center mb-4">
+        <h2>Edit Timetable</h2>
+        <a href="{% url 'timetable_view' %}" class="text-sm text-indigo font-medium">Cancel</a>
+    </div>
+
+    {% if error %}
+        <div class="card text-center" style="padding: 3rem;">
+            <h3 class="text-muted">{{ error }}</h3>
+        </div>
+    {% else %}
+    <form method="post" id="timetable-form">
+        {% csrf_token %}
+        <div class="edit-grid">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        {% for label in day_labels %}
+                            <th>{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody id="edit-tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="save-bar">
+            <p class="text-sm text-muted">Leave cells empty for free periods.</p>
+            <button type="submit" class="btn btn-primary" style="width: auto;" id="save-btn">Save Timetable</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const gridData = JSON.parse('{{ grid_data_json|escapejs }}');
+    const days = JSON.parse('{{ days_json|escapejs }}');
+    const periods = JSON.parse('{{ periods_json|escapejs }}');
+
+    const tbody = document.getElementById('edit-tbody');
+    if (!tbody) return;
+
+    periods.forEach(p => {
+        const tr = document.createElement('tr');
+        const tdPeriod = document.createElement('td');
+        tdPeriod.className = 'period-label';
+        tdPeriod.textContent = `P${p}`;
+        tr.appendChild(tdPeriod);
+
+        days.forEach(day => {
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = `slot_${day}_${p}`;
+            const subjects = gridData[day] || [];
+            input.value = subjects[p - 1] || '';
+            input.placeholder = '—';
+            td.appendChild(input);
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+
+    // Prevent double submit
+    const form = document.getElementById('timetable-form');
+    const saveBtn = document.getElementById('save-btn');
+    form.addEventListener('submit', () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+    });
+});
+</script>
+{% endblock %}

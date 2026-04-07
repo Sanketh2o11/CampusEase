@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+
+{% block title %}Study Materials - CampusEase{% endblock %}
+{% block mobile_title %}Notes{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+.search-container { position: relative; margin-bottom: var(--space-3); }
+.search-input {
+    width: 100%; padding: 16px 16px 16px 48px; font-size: 1.125rem;
+    font-family: var(--font-body); border: 1px solid var(--border-color);
+    border-radius: var(--radius-card); background-color: var(--surface);
+    color: var(--text-main); box-shadow: var(--shadow-card); transition: all 150ms;
+}
+.search-input:focus { outline: none; border-color: var(--indigo); box-shadow: var(--shadow-hover); }
+.search-icon {
+    position: absolute; left: 16px; top: 50%;
+    transform: translateY(-50%); color: var(--text-muted);
+}
+.tabs-container {
+    display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none;
+    padding-bottom: var(--space-2); margin-bottom: var(--space-3);
+    border-bottom: 2px solid var(--border-color);
+}
+.tabs-container::-webkit-scrollbar { display: none; }
+.tab {
+    padding: 8px 16px; background: none; border: none; color: var(--text-muted);
+    font-weight: 500; font-size: 1rem; cursor: pointer; white-space: nowrap;
+    border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 150ms;
+    font-family: var(--font-body);
+}
+.tab:hover { color: var(--navy); }
+.tab.active { color: var(--navy); font-weight: 700; border-bottom-color: var(--indigo); }
+
+.material-card { display: flex; flex-direction: column; height: 100%; }
+.material-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: var(--space-3); }
+.drive-icon {
+    flex-shrink: 0; width: 40px; height: 40px; background-color: var(--bg-color);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+}
+.material-meta { flex: 1; }
+.material-title {
+    font-family: var(--font-heading); font-size: 1.125rem;
+    font-weight: 700; margin-bottom: 4px; line-height: 1.3;
+}
+.pinned-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.75rem; color: var(--indigo); font-weight: 600;
+}
+
+/* Thank You button */
+.thankyou-btn {
+    background: none; border: 1px solid var(--border-color);
+    padding: 6px 12px; border-radius: var(--radius-pill);
+    cursor: pointer; font-family: var(--font-body); font-size: 0.85rem;
+    font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+    transition: all 150ms; color: var(--text-muted);
+}
+.thankyou-btn:hover { border-color: var(--amber); color: var(--amber); }
+.thankyou-btn.thanked {
+    background: rgba(217,119,6,0.08); border-color: var(--amber);
+    color: var(--amber); cursor: default;
+}
+
+/* Exam mode banner */
+.exam-banner {
+    background: linear-gradient(135deg, rgba(232,93,4,0.08), rgba(220,38,38,0.05));
+    border: 1px solid rgba(232,93,4,0.2); border-radius: var(--radius-card);
+    padding: var(--space-3); margin-bottom: var(--space-3);
+}
+.exam-banner h3 { font-size: 1rem; color: var(--coral); margin-bottom: var(--space-2); }
+.exam-banner-materials {
+    display: flex; flex-direction: column; gap: var(--space-1);
+}
+.exam-banner-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; background: var(--surface); border-radius: var(--radius-input);
+    font-size: 0.9rem;
+}
+
+.empty-state { text-align: center; padding: 3rem 1rem; grid-column: 1 / -1; display: none; }
+.drawer { z-index: 400; }
+.drawer-overlay { z-index: 399; }
+
+/* Type icons */
+.type-icon { font-size: 1.1rem; }
+</style>
+
+<div class="page-container">
+    <div class="flex justify-between items-center mb-4">
+        <h2>Study Materials</h2>
+        <button class="btn btn-primary" onclick="window.openDrawer('material-drawer')" style="width: auto; display: none;" id="desktop-add-btn">+ Upload Note</button>
+    </div>
+
+    <button class="fab" onclick="window.openDrawer('material-drawer')" title="Upload Note">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" width="24" height="24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+
+    <!-- Exam Mode Banner -->
+    {% if exam_alert %}
+    <div class="exam-banner">
+        <h3>&#128218; {{ exam_alert.subject }} exam in {{ exam_alert.days_until }} day{{ exam_alert.days_until|pluralize }} — Top resources:</h3>
+        <div class="exam-banner-materials">
+            {% for mat in exam_top_materials %}
+            <div class="exam-banner-item">
+                <span class="font-medium">{{ mat.title }}</span>
+                <a href="{{ mat.drive_link }}" target="_blank" class="text-indigo text-sm">Open &#8599;</a>
+            </div>
+            {% empty %}
+            <div class="text-sm text-muted">No materials uploaded for this subject yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search notes, subjects, topics...">
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="tabs-container" id="tabs-container">
+        <button class="tab active" data-subject="all">All</button>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-2" id="materialsGrid" style="grid-template-columns: repeat(2, 1fr);">
+        {% for mat in materials %}
+        <div class="card material-card" data-title="{{ mat.title }}" data-subject="{{ mat.subject }}" data-thanked="{{ mat.pk }}" data-pinned="{% if mat.is_pinned %}1{% else %}0{% endif %}">
+            {% if user.is_cr or user == mat.uploader %}
+            <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px;">
+                {% if user.is_cr %}
+                <form method="post" action="{% url 'material_pin_toggle' mat.pk %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-icon" style="width: 28px; height: 28px;" title="{% if mat.is_pinned %}Unpin{% else %}Pin{% endif %}">
+                        {% if mat.is_pinned %}&#128204;{% else %}&#128392;{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+                <form method="post" action="{% url 'material_delete' mat.pk %}" onsubmit="return confirm('Delete this material?');" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-icon" style="color: var(--red); width: 28px; height: 28px;" title="Delete">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="material-header">
+                <div class="drive-icon">
+                    <span class="type-icon">
+                        {% if mat.material_type == 'pdf' %}&#128196;{% elif mat.material_type == 'ppt' %}&#128202;{% elif mat.material_type == 'youtube' %}&#9654;{% elif mat.material_type == 'classroom' %}&#127979;{% else %}&#128194;{% endif %}
+                    </span>
+                </div>
+                <div class="material-meta">
+                    {% if mat.is_pinned %}<div class="pinned-badge">&#128204; Pinned</div>{% endif %}
+                    <div class="material-title">{{ mat.title }}</div>
+                    <span class="badge badge-gray mb-2">{{ mat.subject }}</span>
+                    <div class="text-sm text-muted">By {{ mat.uploader.full_name|default:mat.uploader.email }}</div>
+                </div>
+            </div>
+
+            <div style="margin-top: auto; display: flex; gap: 8px; align-items: center;">
+                <a href="{{ mat.drive_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="flex: 1; font-size: 0.9rem; padding: 10px;">
+                    Open in Drive &#8599;
+                </a>
+                <button type="button" class="thankyou-btn {% if mat.pk in thanked_ids %}thanked{% endif %}"
+                    data-id="{{ mat.pk }}" data-count="{{ mat.thank_you_count }}"
+                    onclick="thankMaterial(this, {{ mat.pk }})">
+                    &#128591; <span class="ty-count">{{ mat.thank_you_count }}</span>
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="display: block;" id="backend-empty">
+            <h3 class="text-muted mb-2">No notes here yet.</h3>
+            <p class="text-sm text-muted mb-4">Be the first to share notes for your batch!</p>
+            <button class="btn btn-primary" onclick="window.openDrawer('material-drawer')" style="width: auto;">Upload Note</button>
+        </div>
+        {% endfor %}
+        <div class="empty-state" id="frontend-empty">
+            <h3 class="text-muted mb-2">Nothing found.</h3>
+            <p class="text-sm text-muted">Try searching for something else.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Drawer -->
+<div class="drawer-overlay" id="material-drawer-overlay"></div>
+<div class="drawer right-drawer" id="material-drawer">
+    <div class="drawer-header">
+        <h3 style="margin: 0;">Upload Note</h3>
+        <button type="button" class="btn-icon" data-close-drawer="material-drawer">&#10005;</button>
+    </div>
+    <div class="drawer-body">
+        <form action="{% url 'material_upload' %}" method="post" id="uploadForm">
+            {% csrf_token %}
+            <div class="form-floating">
+                <input type="text" name="title" id="id_title" placeholder=" " required>
+                <label for="id_title">Material Title</label>
+            </div>
+            <div class="form-floating">
+                <input type="text" name="subject" id="id_subject" placeholder=" " required>
+                <label for="id_subject">Subject</label>
+            </div>
+            <div class="form-floating">
+                <select name="material_type" id="id_material_type">
+                    <option value="pdf">&#128196; Drive PDF</option>
+                    <option value="ppt">&#128202; Drive PPT</option>
+                    <option value="classroom">&#127979; Google Classroom</option>
+                    <option value="youtube">&#9654; YouTube</option>
+                    <option value="other">&#128194; Other</option>
+                </select>
+                <label for="id_material_type" style="transform: translateY(-10px) scale(0.75);">Type</label>
+            </div>
+            <div class="form-floating" id="drive-link-wrapper">
+                <input type="url" name="drive_link" id="id_drive_link" placeholder=" " required>
+                <label for="id_drive_link">Google Drive URL</label>
+            </div>
+            <div id="drive-error" class="text-red text-sm mb-4 font-medium" style="display: none;">Must be a valid Google Drive link.</div>
+            <button type="submit" class="btn btn-primary mt-4">Upload Note</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.innerWidth > 768) {
+        const btn = document.getElementById('desktop-add-btn');
+        if (btn) btn.style.display = 'inline-flex';
+    }
+
+    // Subject tabs
+    const cardsNodeList = document.querySelectorAll('.material-card');
+    const cardsArray = [];
+    const subjectsSet = new Set();
+    cardsNodeList.forEach(card => {
+        const title = card.dataset.title;
+        const subject = card.dataset.subject;
+        subjectsSet.add(subject);
+        cardsArray.push({ el: card, title, subject });
+    });
+    const tabsContainer = document.getElementById('tabs-container');
+    subjectsSet.forEach(subject => {
+        const btn = document.createElement('button');
+        btn.className = 'tab';
+        btn.dataset.subject = subject;
+        btn.innerText = subject;
+        tabsContainer.appendChild(btn);
+    });
+
+    let activeFilter = 'all';
+
+    // Fuse.js
+    const fuse = new Fuse(cardsArray, { keys: ['title', 'subject'], threshold: 0.4 });
+    const searchInput = document.getElementById('searchInput');
+    const frontendEmpty = document.getElementById('frontend-empty');
+
+    function filterCards() {
+        const query = searchInput.value.trim();
+        let results = cardsArray;
+        if (query.length > 0) results = fuse.search(query).map(r => r.item);
+        if (activeFilter !== 'all') results = results.filter(item => item.subject === activeFilter);
+        let visibleCount = 0;
+        cardsArray.forEach(item => {
+            if (results.includes(item)) { item.el.style.display = 'flex'; visibleCount++; }
+            else { item.el.style.display = 'none'; }
+        });
+        if (cardsArray.length > 0) {
+            frontendEmpty.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+    searchInput.addEventListener('input', filterCards);
+    tabsContainer.addEventListener('click', e => {
+        if (e.target.classList.contains('tab')) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            activeFilter = e.target.dataset.subject;
+            filterCards();
+        }
+    });
+
+    // Drive URL validation — only enforced for drive/pdf/ppt/classroom types
+    const driveInput = document.getElementById('id_drive_link');
+    const typeSelect = document.getElementById('id_material_type');
+    const driveWrapper = document.getElementById('drive-link-wrapper');
+    const driveError = document.getElementById('drive-error');
+    const uploadForm = document.getElementById('uploadForm');
+
+    const driveOnlyTypes = ['pdf', 'ppt', 'classroom'];
+    const needsDriveUrl = () => driveOnlyTypes.includes(typeSelect ? typeSelect.value : 'other');
+
+    driveInput.addEventListener('blur', () => {
+        const url = driveInput.value;
+        if (url && needsDriveUrl() && !url.includes('drive.google.com')) {
+            driveWrapper.classList.add('form-error', 'shake');
+            driveError.style.display = 'block';
+            setTimeout(() => driveWrapper.classList.remove('shake'), 400);
+        } else {
+            driveWrapper.classList.remove('form-error');
+            driveError.style.display = 'none';
+        }
+    });
+
+    // Update label dynamically based on type
+    const driveLinkLabel = driveWrapper ? driveWrapper.querySelector('label') : null;
+    if (typeSelect && driveLinkLabel) {
+        const updateLabel = () => {
+            const labels = {
+                'pdf': 'Google Drive PDF URL',
+                'ppt': 'Google Drive PPT URL',
+                'classroom': 'Google Classroom URL',
+                'youtube': 'YouTube URL',
+                'other': 'Resource URL',
+            };
+            driveLinkLabel.textContent = labels[typeSelect.value] || 'Resource URL';
+        };
+        updateLabel();
+        typeSelect.addEventListener('change', () => { updateLabel(); driveError.style.display = 'none'; driveWrapper.classList.remove('form-error'); });
+    }
+
+    uploadForm.addEventListener('submit', e => {
+        const url = driveInput.value;
+        if (url && needsDriveUrl() && !url.includes('drive.google.com')) {
+            e.preventDefault();
+            uploadForm.dataset.submitted = 'false';
+            const btn = uploadForm.querySelector('button[type="submit"]');
+            btn.disabled = false; btn.innerHTML = btn.dataset.originalText || 'Upload Note';
+            driveWrapper.classList.add('form-error', 'shake');
+            driveError.style.display = 'block';
+            setTimeout(() => driveWrapper.classList.remove('shake'), 400);
+        }
+    });
+});
+
+// Thank You
+function thankMaterial(btn, materialId) {
+    if (btn.classList.contains('thanked')) return;
+    const csrfToken = '{{ csrf_token }}';
+    btn.disabled = true;
+    fetch(`/materials/${materialId}/thankyou/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+        body: '{}',
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.querySelector('.ty-count').textContent = data.count;
+        btn.classList.add('thanked');
+        btn.disabled = false;
+    })
+    .catch(() => { btn.disabled = false; });
+}
+</script>
+{% endblock %}

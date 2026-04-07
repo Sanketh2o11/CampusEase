@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - CampusEase{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; margin-top: 3rem;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title text-center">Join CampusEase</h2>
+            <p class="text-center text-muted text-sm" style="margin-top: 0.5rem;">Create your student dashboard account.</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    
+                    {% if field.help_text %}
+                        <small class="text-muted" style="display: block; margin-top: 0.25rem;">{{ field.help_text|safe }}</small>
+                    {% endif %}
+                    
+                    {% if field.errors %}
+                        <div class="text-error mt-2 text-sm" style="color: var(--danger);">
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Account</button>
+        </form>
+        
+        <div class="text-center mt-4">
+            <p class="text-muted text-sm">Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Add classes to Django generated fields -->
+<script>
+    document.querySelectorAll('input, select').forEach(input => {
+        if(input.type !== 'submit' && input.type !== 'hidden') {
+            input.classList.add('form-control');
+        }
+    });
+</script>
+{% endblock %}

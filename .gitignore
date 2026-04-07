@@ -1,0 +1,34 @@
+# Environment
+.env
+!.env.example
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+
+# Test output files
+*.txt
+!requirements.txt
+
+# DB dump (contains real data — share separately)
+campusease_dev.sql
+
+# Claude Code (local AI assistant config — not for repo)
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
