@@ -72,6 +72,125 @@
 .cal-legend span { display: flex; align-items: center; gap: 4px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
+/* Two-column layout */
+.exams-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    align-items: start;
+}
+@media (min-width: 900px) {
+    .exams-layout {
+        grid-template-columns: 3fr 2fr;
+    }
+    .exams-right {
+        position: sticky;
+        top: 24px;
+    }
+}
+
+/* Focus Panel */
+.focus-panel {
+    background: var(--surface); border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card); padding: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+.focus-panel-title {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);
+}
+.focus-exam-name {
+    font-family: var(--font-heading); font-weight: 700; font-size: 1.1rem;
+    color: var(--navy); margin-bottom: 2px;
+}
+.focus-exam-subject { color: var(--text-muted); font-size: 0.88rem; margin-bottom: var(--space-2); }
+.focus-days {
+    font-family: var(--font-mono); font-size: 2rem; font-weight: 700;
+    color: var(--indigo); line-height: 1;
+}
+.focus-days-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; margin-bottom: var(--space-2); }
+.focus-suggestion {
+    background: rgba(59,91,219,0.06); border-left: 3px solid var(--indigo);
+    border-radius: 0 var(--radius-input) var(--radius-input) 0;
+    padding: 10px 12px; font-size: 0.88rem; color: var(--navy); line-height: 1.5;
+}
+.focus-done {
+    text-align: center; padding: var(--space-3) 0;
+    font-size: 0.95rem; color: var(--text-muted);
+}
+
+/* Filter tabs */
+.exam-tabs {
+    display: flex; gap: 6px; margin-bottom: var(--space-3);
+}
+.exam-tab {
+    padding: 6px 18px; border-radius: 20px; border: 1.5px solid var(--border-color);
+    background: none; cursor: pointer; font-family: var(--font-body); font-weight: 600;
+    font-size: 0.85rem; color: var(--text-muted); transition: all 150ms;
+}
+.exam-tab.active {
+    background: var(--indigo); border-color: var(--indigo); color: #fff;
+}
+
+/* Countdown pill */
+.countdown-pill {
+    display: inline-block; font-size: 0.75rem; font-weight: 700;
+    padding: 2px 10px; border-radius: 12px; margin-left: 8px; vertical-align: middle;
+}
+.countdown-pill.today  { background: rgba(220,38,38,0.1);  color: var(--red); }
+.countdown-pill.soon   { background: rgba(217,119,6,0.1);  color: #b45309; }
+.countdown-pill.future { background: rgba(59,91,219,0.08); color: var(--indigo); }
+.countdown-pill.past   { background: var(--bg-color);      color: var(--text-muted); }
+
+/* Score bar */
+.score-bar-wrap { margin-top: 6px; }
+.score-bar-track {
+    height: 6px; border-radius: 3px; background: rgba(13,148,136,0.12);
+    overflow: hidden;
+}
+.score-bar-fill {
+    height: 100%; border-radius: 3px; background: var(--teal);
+    transition: width 400ms ease;
+}
+.score-pct { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+
+/* Doubt bubble + panel */
+.doubt-bubble {
+    position: fixed; bottom: 88px; right: 24px; z-index: 310;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--navy); color: #fff; border: none;
+    box-shadow: 0 4px 16px rgba(27,42,74,0.35);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 150ms, box-shadow 150ms;
+}
+.doubt-bubble:hover { transform: scale(1.07); box-shadow: 0 6px 20px rgba(27,42,74,0.45); }
+.doubt-panel {
+    position: fixed; bottom: 152px; right: 24px; z-index: 310;
+    width: 320px; background: var(--surface);
+    border-radius: var(--radius-card); box-shadow: var(--shadow-hover);
+    padding: var(--space-3); display: none;
+}
+.doubt-panel.open { display: block; }
+.doubt-panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: var(--space-2);
+}
+.doubt-panel-header h4 { margin: 0; font-size: 0.95rem; color: var(--navy); }
+.doubt-close {
+    background: none; border: none; cursor: pointer; font-size: 1.1rem;
+    color: var(--text-muted); line-height: 1; padding: 0 4px;
+}
+.doubt-answer {
+    max-height: 180px; overflow-y: auto; font-size: 0.88rem; line-height: 1.6;
+    color: var(--navy); margin: var(--space-2) 0;
+    padding: var(--space-2); background: var(--bg-color);
+    border-radius: var(--radius-input); display: none;
+}
+.doubt-answer.visible { display: block; }
+.doubt-disclaimer {
+    font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-1);
+}
+
 /* Exam Cards */
 .exam-section-title {
     font-family: var(--font-heading); font-weight: 700; color: var(--navy);
@@ -171,51 +290,119 @@
     </button>
     {% endif %}
 
-    <!-- Batch Exam Schedule -->
-    <div id="exam-cards">
-        {% if batch_exams %}
-        {% regroup batch_exams by exam_date.month as month_list %}
-        {% for month_group in month_list %}
-        <div class="exam-section-title">
-            {% with first_exam=month_group.list.0 %}
-            {{ first_exam.exam_date|date:"F Y" }}
-            {% endwith %}
-        </div>
-        {% for exam in month_group.list %}
-        <div class="exam-card {{ exam.exam_type }} {% if exam.is_past %}past{% endif %}" id="exam-card-{{ exam.pk }}">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="exam-name">{{ exam.exam_name }}</div>
-                    <div class="exam-subject">{{ exam.subject }}</div>
-                    <div class="exam-date">{{ exam.exam_date|date:"F d, Y" }}</div>
-                </div>
-                <span class="badge {% if exam.exam_type == 'internal' %}badge-red{% else %}badge-green{% endif %}">{{ exam.get_exam_type_display }}</span>
-            </div>
-            {% if exam.syllabus %}
-            <div class="syllabus">{{ exam.syllabus }}</div>
-            {% endif %}
+    <!-- Two-column layout -->
+    <div class="exams-layout">
 
-            <!-- Personal result inline -->
-            {% if personal_results and exam.pk in personal_results %}
-            <div class="my-result" id="result-{{ exam.pk }}">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm font-medium">My Result</span>
-                    <span class="result-score">{% for r_id, r in personal_results.items %}{% if r_id == exam.pk %}{{ r.score }}{% endif %}{% endfor %}</span>
-                </div>
+        <!-- Left: Exam List -->
+        <div class="exams-left">
+            <!-- Filter Tabs -->
+            <div class="exam-tabs">
+                <button class="exam-tab active" id="tab-upcoming" onclick="setTab('upcoming')">Upcoming</button>
+                <button class="exam-tab" id="tab-past" onclick="setTab('past')">Past</button>
             </div>
-            {% elif exam.is_past %}
-            <button type="button" class="result-btn" onclick="openResultSheet({{ exam.pk }}, '{{ exam.exam_name|escapejs }}')">Add My Result</button>
-            {% endif %}
+
+            <!-- Batch Exam Schedule -->
+            <div id="exam-cards">
+                {% if batch_exams %}
+                {% regroup batch_exams by exam_date.month as month_list %}
+                {% for month_group in month_list %}
+                <div class="exam-month-group" data-has-upcoming="{% for exam in month_group.list %}{% if not exam.is_past %}yes{% endif %}{% endfor %}" data-has-past="{% for exam in month_group.list %}{% if exam.is_past %}yes{% endif %}{% endfor %}">
+                    <div class="exam-section-title">
+                        {% with first_exam=month_group.list.0 %}
+                        {{ first_exam.exam_date|date:"F Y" }}
+                        {% endwith %}
+                    </div>
+                    {% for exam in month_group.list %}
+                    <div class="exam-card {{ exam.exam_type }} {% if exam.is_past %}past{% endif %}" id="exam-card-{{ exam.pk }}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="exam-name">{{ exam.exam_name }}
+                                    {% if exam.days_until == 0 %}
+                                        <span class="countdown-pill today">Today!</span>
+                                    {% elif exam.days_until == 1 %}
+                                        <span class="countdown-pill soon">Tomorrow</span>
+                                    {% elif exam.days_until > 1 %}
+                                        <span class="countdown-pill future">in {{ exam.days_until }} days</span>
+                                    {% else %}
+                                        <span class="countdown-pill past">{{ exam.days_until|stringformat:"d"|slice:"1:" }} days ago</span>
+                                    {% endif %}
+                                </div>
+                                <div class="exam-subject">{{ exam.subject }}</div>
+                                <div class="exam-date">{{ exam.exam_date|date:"F d, Y" }}</div>
+                            </div>
+                            <span class="badge {% if exam.exam_type == 'internal' %}badge-red{% else %}badge-green{% endif %}">{{ exam.get_exam_type_display }}</span>
+                        </div>
+                        {% if exam.syllabus %}
+                        <div class="syllabus">{{ exam.syllabus }}</div>
+                        {% endif %}
+
+                        <!-- Personal result inline -->
+                        {% if personal_results and exam.pk in personal_results %}
+                        <div class="my-result" id="result-{{ exam.pk }}">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium">My Result</span>
+                                <span class="result-score">{% for r_id, r in personal_results.items %}{% if r_id == exam.pk %}{{ r.score }}{% endif %}{% endfor %}</span>
+                            </div>
+                            <div class="score-bar-wrap" style="display:none;">
+                                <div class="score-bar-track"><div class="score-bar-fill" style="width:0%"></div></div>
+                                <div class="score-pct"></div>
+                            </div>
+                        </div>
+                        {% elif exam.is_past %}
+                        <button type="button" class="result-btn" onclick="openResultSheet({{ exam.pk }}, '{{ exam.exam_name|escapejs }}')">Add My Result</button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="card text-center" style="padding: 3rem;">
+                    <h3 class="text-muted mb-2">No exams scheduled yet.</h3>
+                    <p class="text-sm text-muted">{% if user.is_cr %}Click + to add the first exam.{% else %}CR will post the schedule here.{% endif %}</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
-        {% endfor %}
-        {% endfor %}
-        {% else %}
-        <div class="card text-center" style="padding: 3rem;">
-            <h3 class="text-muted mb-2">No exams scheduled yet.</h3>
-            <p class="text-sm text-muted">{% if user.is_cr %}Click + to add the first exam.{% else %}CR will post the schedule here.{% endif %}</p>
+
+        <!-- Right: Focus Panel -->
+        <div class="exams-right">
+            <div class="focus-panel">
+                <div class="focus-panel-title">Next Exam</div>
+                {% if next_exam %}
+                <div class="focus-exam-name">{{ next_exam.exam_name }}</div>
+                <div class="focus-exam-subject">{{ next_exam.subject }}</div>
+                {% if next_exam.days_until == 0 %}
+                    <div class="focus-days" style="color:var(--red);">Today</div>
+                    <div class="focus-days-label">{{ next_exam.exam_date|date:"F d, Y" }}</div>
+                    <div class="focus-suggestion">It's exam day — stay calm and trust your prep.</div>
+                {% elif next_exam.days_until == 1 %}
+                    <div class="focus-days">1</div>
+                    <div class="focus-days-label">day left &middot; {{ next_exam.exam_date|date:"F d, Y" }}</div>
+                    <div class="focus-suggestion">Final revision — go through notes one last time.</div>
+                {% elif next_exam.days_until <= 3 %}
+                    <div class="focus-days">{{ next_exam.days_until }}</div>
+                    <div class="focus-days-label">days left &middot; {{ next_exam.exam_date|date:"F d, Y" }}</div>
+                    <div class="focus-suggestion">Practice previous year questions and sample problems.</div>
+                {% elif next_exam.days_until <= 7 %}
+                    <div class="focus-days">{{ next_exam.days_until }}</div>
+                    <div class="focus-days-label">days left &middot; {{ next_exam.exam_date|date:"F d, Y" }}</div>
+                    <div class="focus-suggestion">Focus on weak topics and make quick summary notes.</div>
+                {% elif next_exam.days_until <= 14 %}
+                    <div class="focus-days">{{ next_exam.days_until }}</div>
+                    <div class="focus-days-label">days left &middot; {{ next_exam.exam_date|date:"F d, Y" }}</div>
+                    <div class="focus-suggestion">Complete the syllabus systematically, topic by topic.</div>
+                {% else %}
+                    <div class="focus-days">{{ next_exam.days_until }}</div>
+                    <div class="focus-days-label">days left &middot; {{ next_exam.exam_date|date:"F d, Y" }}</div>
+                    <div class="focus-suggestion">Build a study schedule and get an early start.</div>
+                {% endif %}
+                {% else %}
+                <div class="focus-done">All exams done — great work! 🎉</div>
+                {% endif %}
+            </div>
         </div>
-        {% endif %}
-    </div>
+
+    </div><!-- end .exams-layout -->
 </div>
 
 <!-- CR Add Exam Drawer -->
@@ -257,6 +444,28 @@
     </div>
 </div>
 {% endif %}
+
+<!-- AI Doubt Bubble + Panel -->
+<button class="doubt-bubble" id="doubt-bubble" title="Ask a doubt">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+</button>
+<div class="doubt-panel" id="doubt-panel">
+    <div class="doubt-panel-header">
+        <h4>Ask a Doubt</h4>
+        <button class="doubt-close" id="doubt-close">&#10005;</button>
+    </div>
+    <div class="form-floating" style="margin-bottom: 8px;">
+        <input type="text" id="doubt-question" placeholder=" " autocomplete="off">
+        <label>Type your question...</label>
+    </div>
+    <button class="btn btn-primary" id="doubt-ask-btn" style="width:100%; padding: 10px;">Ask AI</button>
+    <div class="doubt-answer" id="doubt-answer"></div>
+    <div class="doubt-disclaimer">AI can make mistakes — verify important facts.</div>
+</div>
 
 <!-- Result Bottom Sheet -->
 <div class="result-sheet-overlay" id="result-overlay"></div>
@@ -381,6 +590,39 @@ document.addEventListener('DOMContentLoaded', () => {
     resultOverlay.addEventListener('click', closeResultSheet);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeResultSheet(); });
 
+    // --- Filter Tabs ---
+    window.setTab = function(tab) {
+        document.getElementById('tab-upcoming').classList.toggle('active', tab === 'upcoming');
+        document.getElementById('tab-past').classList.toggle('active', tab === 'past');
+
+        document.querySelectorAll('.exam-month-group').forEach(group => {
+            const cards = group.querySelectorAll('.exam-card');
+            let anyVisible = false;
+            cards.forEach(card => {
+                const isPast = card.classList.contains('past');
+                const show = (tab === 'past') ? isPast : !isPast;
+                card.style.display = show ? '' : 'none';
+                if (show) anyVisible = true;
+            });
+            group.style.display = anyVisible ? '' : 'none';
+        });
+    };
+    setTab('upcoming');
+
+    // --- Score Bars ---
+    document.querySelectorAll('.my-result').forEach(resultDiv => {
+        const scoreEl = resultDiv.querySelector('.result-score');
+        if (!scoreEl) return;
+        const match = scoreEl.textContent.trim().match(/^(\d+)\s*\/\s*(\d+)$/);
+        if (!match) return;
+        const pct = Math.round((parseInt(match[1]) / parseInt(match[2])) * 100);
+        const wrap = resultDiv.querySelector('.score-bar-wrap');
+        if (!wrap) return;
+        wrap.style.display = '';
+        wrap.querySelector('.score-bar-fill').style.width = pct + '%';
+        wrap.querySelector('.score-pct').textContent = pct + '%';
+    });
+
     document.getElementById('result-save-btn').addEventListener('click', () => {
         const btn = document.getElementById('result-save-btn');
         btn.disabled = true;
@@ -406,10 +648,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Add result inline
                     const resultDiv = document.createElement('div');
                     resultDiv.className = 'my-result';
+                    const scoreMatch = data.score.match(/^(\d+)\s*\/\s*(\d+)$/);
+                    const pct = scoreMatch ? Math.round((parseInt(scoreMatch[1]) / parseInt(scoreMatch[2])) * 100) : null;
                     resultDiv.innerHTML = `<div class="flex justify-between items-center">
                         <span class="text-sm font-medium">My Result</span>
                         <span class="result-score">${data.score}</span>
-                    </div>`;
+                    </div>` + (pct !== null ? `<div class="score-bar-wrap">
+                        <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+                        <div class="score-pct">${pct}%</div>
+                    </div>` : '');
                     card.appendChild(resultDiv);
                 }
                 if (window.showToast) window.showToast('Result saved!', 'success');
@@ -424,5 +671,98 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+</script>
+
+<style>
+/* OwlAI hint label */
+.owl-hint {
+    position: fixed; bottom: 100px; right: 86px; z-index: 310;
+    background: var(--navy); color: #fff;
+    font-size: 0.78rem; font-weight: 600; white-space: nowrap;
+    padding: 6px 12px; border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(27,42,74,0.3);
+    pointer-events: none;
+    opacity: 1; transition: opacity 600ms ease;
+}
+.owl-hint.hidden { opacity: 0; }
+.owl-hint::after {
+    content: ''; position: absolute; right: -6px; top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: var(--navy); border-right: none;
+}
+</style>
+
+<!-- OwlAI hint (fades after 5s) -->
+<div class="owl-hint" id="owl-hint">Ask your doubts &mdash; OwlAI</div>
+
+<script>
+// Doubt Bubble — isolated from main script so errors elsewhere don't block it
+(function() {
+    var csrfToken = '{{ csrf_token }}';
+
+    // Fade out hint after 5 seconds
+    var hint = document.getElementById('owl-hint');
+    if (hint) {
+        setTimeout(function() { hint.classList.add('hidden'); }, 5000);
+        setTimeout(function() { hint.style.display = 'none'; }, 5700);
+    }
+
+    var bubble = document.getElementById('doubt-bubble');
+    var panel  = document.getElementById('doubt-panel');
+    var closeBtn = document.getElementById('doubt-close');
+    var askBtn = document.getElementById('doubt-ask-btn');
+    var answerDiv = document.getElementById('doubt-answer');
+
+    if (!bubble || !panel) return;
+
+    bubble.addEventListener('click', function() {
+        var isOpen = panel.classList.contains('open');
+        if (isOpen) {
+            panel.classList.remove('open');
+        } else {
+            panel.classList.add('open');
+            document.getElementById('doubt-question').focus();
+        }
+    });
+
+    closeBtn.addEventListener('click', function() {
+        panel.classList.remove('open');
+    });
+
+    function askDoubt() {
+        var question = document.getElementById('doubt-question').value.trim();
+        if (!question) return;
+
+        askBtn.disabled = true;
+        askBtn.textContent = 'Thinking...';
+        answerDiv.classList.remove('visible');
+        answerDiv.textContent = '';
+
+        fetch('/exams/ask-doubt/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ question: question }),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            answerDiv.textContent = data.answer || data.error || 'No response received.';
+            answerDiv.classList.add('visible');
+        })
+        .catch(function() {
+            answerDiv.textContent = 'Something went wrong. Try again.';
+            answerDiv.classList.add('visible');
+        })
+        .finally(function() {
+            askBtn.disabled = false;
+            askBtn.textContent = 'Ask AI';
+        });
+    }
+
+    askBtn.addEventListener('click', askDoubt);
+    document.getElementById('doubt-question').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') askDoubt();
+    });
+})();
 </script>
 {% endblock %}

@@ -142,4 +142,7 @@ AUTH_USER_MODEL = 'accounts.User'
 # Auth redirects
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
+
+# Gemini AI (for Doubt Explainer)
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 LOGOUT_REDIRECT_URL = '/accounts/login/'

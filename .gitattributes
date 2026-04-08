@@ -1,0 +1,3 @@
+# Force shell scripts to use LF line endings in the repo (required for Linux containers)
+entrypoint.sh text eol=lf
+*.sh text eol=lf

@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, UpdateView, View
 from django.utils import timezone
+from django.conf import settings
 
 from .models import BatchExam, PersonalExamResult
 from .forms import BatchExamForm, PersonalExamResultForm
@@ -53,11 +54,16 @@ class ExamListView(LoginRequiredMixin, ListView):
         # but Django template engine coerces to string for dict lookup)
         context['personal_scores'] = {str(k): v.score for k, v in results.items()}
 
-        # Mark past vs upcoming
+        # Mark past vs upcoming and compute days_until
+        next_exam = None
         for exam in batch_exams:
             exam.is_past = exam.exam_date < today
+            exam.days_until = (exam.exam_date - today).days
+            if not exam.is_past and next_exam is None:
+                next_exam = exam
 
         context['today'] = today
+        context['next_exam'] = next_exam
 
         return context
 
@@ -111,3 +117,46 @@ class PersonalResultCreateView(LoginRequiredMixin, View):
             'notes': result.notes,
             'created': created,
         })
+
+
+class AskDoubtView(LoginRequiredMixin, View):
+    """AJAX: Student asks a subject doubt — answered by Gemini."""
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        question = (data.get('question') or '').strip()
+        if not question:
+            return JsonResponse({'error': 'Question is required'}, status=400)
+
+        api_key = getattr(settings, 'GEMINI_API_KEY', '')
+        if not api_key:
+            return JsonResponse({'error': 'AI service is not configured.'}, status=503)
+
+        try:
+            from google import genai
+        except ImportError:
+            return JsonResponse({'error': 'AI SDK is missing on server. Install google-genai.'}, status=503)
+
+        try:
+            client = genai.Client(api_key=api_key)
+            prompt = (
+                "You are a helpful tutor for engineering students.\n"
+                "Answer the following question briefly and clearly in 5-6 lines max.\n"
+                "Use simple language. No markdown formatting.\n\n"
+                f"Question: {question}"
+            )
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            answer = (response.text or '').strip()
+            if not answer:
+                return JsonResponse({'error': 'AI provider returned an empty response.'}, status=502)
+        except Exception:
+            return JsonResponse({'error': 'Could not get a response from AI provider. Try again.'}, status=502)
+
+        return JsonResponse({'answer': answer})

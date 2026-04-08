@@ -1,0 +1,34 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: campusease
+      MYSQL_DATABASE: campusease
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./campusease_dev.sql:/docker-entrypoint-initdb.d/campusease_dev.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pcampusease"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    stdin_open: true   # allows interactive input at startup
+    tty: true
+    volumes:
+      - .:/app   # bind mount — edit code locally, Django reloads instantly
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DEBUG: "True"
+      SECRET_KEY: "docker-dev-secret-key-change-for-production"
+      DATABASE_URL: "mysql://root:campusease@db:3306/campusease"
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"   # read from .env — include .env when sharing via zip
+
+volumes:
+  mysql_data:

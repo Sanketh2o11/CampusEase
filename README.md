@@ -7,6 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 [Features](#-features) • [Getting Started](#-getting-started) • [Test Accounts](#-test-accounts) • [Project Structure](#-project-structure) • [FAQ](#-faq)
@@ -52,6 +53,51 @@ Report lost or found items with images and contact info. Claim flow, contact rev
 ---
 
 ## 🚀 Getting Started
+
+There are two ways to run CampusEase locally:
+
+| Method | Best for | Requires |
+|--------|----------|----------|
+| 🐳 **Docker** (recommended) | Mac, Linux, Windows | Docker Desktop |
+| 🖥 **Manual** | Windows with MySQL already set up | Python, MySQL |
+
+---
+
+### 🐳 Docker Setup (any OS)
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/your-username/CampusEase.git
+cd CampusEase
+
+# 2. Start everything
+docker compose up --build
+```
+
+That's it. Docker handles Python, MySQL, migrations, and sample data automatically.
+
+Open `http://localhost:8000` and log in with the [test accounts](#-test-accounts) below.
+
+**To stop:**
+```bash
+docker compose down
+```
+
+**To reset the database completely:**
+```bash
+docker compose down -v   # -v removes the MySQL volume
+docker compose up --build
+```
+
+> 💡 **Hot reload is on** — edit any `.py` file or template and Django restarts automatically. No rebuild needed.
+
+> 🔑 **Gemini AI feature:** On startup, you'll be prompted to enter a Gemini API key (or press Enter to skip). You can also pre-set it by adding `GEMINI_API_KEY=your-key` to your `.env` file. All other features work without it.
+
+---
+
+### 🖥 Manual Setup (Windows)
 
 ### Prerequisites
 
@@ -215,6 +261,9 @@ CampusEase/
 ├── 📄 requirements.txt
 ├── 📄 .env.example       # Environment variable template
 ├── 📄 setup.bat          # Windows automated setup script
+├── 📄 Dockerfile         # Docker image definition
+├── 📄 docker-compose.yml # Dev stack (Django + MySQL)
+├── 📄 entrypoint.sh      # Container startup script
 └── 📄 campusease_dev.sql # Database dump (shared separately)
 ```
 
@@ -284,6 +333,26 @@ copy .env.example .env   # Windows
 cp .env.example .env     # Mac/Linux
 ```
 Then fill in your `DATABASE_URL` with your MySQL password.
+</details>
+
+<details>
+<summary><b>Docker: port 8000 already in use</b></summary>
+
+Something else is using port 8000. Either stop that process or change the port in `docker-compose.yml`:
+```yaml
+ports:
+  - "8080:8000"   # access at http://localhost:8080 instead
+```
+</details>
+
+<details>
+<summary><b>Docker: web container exits immediately / migration error</b></summary>
+
+Usually means MySQL wasn't ready in time despite the healthcheck. Try:
+```bash
+docker compose down && docker compose up
+```
+If it persists, check logs with `docker compose logs db` to see if MySQL had an import error.
 </details>
 
 ---

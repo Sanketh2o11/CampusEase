@@ -1,0 +1,13 @@
+venv/
+node_modules/
+.git/
+__pycache__/
+*.pyc
+*.pyo
+staticfiles/
+.env
+screenshots/
+*.docx
+*.js
+package.json
+package-lock.json
