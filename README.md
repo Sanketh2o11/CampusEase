@@ -72,28 +72,33 @@ There are two ways to run CampusEase locally:
 git clone https://github.com/your-username/CampusEase.git
 cd CampusEase
 
-# 2. Start everything
-docker compose up --build
+# 2. Start the database (runs in background)
+docker compose up -d db
+
+# 3. Start the app (runs in foreground — Gemini prompt appears here)
+docker compose run --rm --service-ports web
 ```
 
-That's it. Docker handles Python, MySQL, migrations, and sample data automatically.
+Docker handles Python, MySQL, migrations, and sample data automatically.
 
 Open `http://localhost:8000` and log in with the [test accounts](#-test-accounts) below.
 
 **To stop:**
 ```bash
+# Ctrl+C stops the web container, then:
 docker compose down
 ```
 
 **To reset the database completely:**
 ```bash
 docker compose down -v   # -v removes the MySQL volume
-docker compose up --build
+docker compose up -d db
+docker compose run --rm --service-ports web
 ```
 
 > 💡 **Hot reload is on** — edit any `.py` file or template and Django restarts automatically. No rebuild needed.
 
-> 🔑 **Gemini AI feature:** On startup, you'll be prompted to enter a Gemini API key (or press Enter to skip). You can also pre-set it by adding `GEMINI_API_KEY=your-key` to your `.env` file. All other features work without it.
+> 🔑 **Gemini AI feature:** On startup you'll be prompted to enter a Gemini API key (press Enter to skip). You can also pre-set it by adding `GEMINI_API_KEY=your-key` to a `.env` file in the project root. All other features work without it.
 
 ---
 
