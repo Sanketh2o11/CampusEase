@@ -759,3 +759,58 @@ a:hover {
   border-color: var(--indigo);
   background: rgba(59, 91, 219, 0.05);
 }
+
+/* ── AI Assistant ── */
+.ai-wrapper { margin-top: 10px; }
+
+.ai-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.ai-action-btn {
+  font-size: 0.78rem; font-weight: 600;
+  padding: 5px 12px; border-radius: 8px;
+  background: rgba(59, 91, 219, 0.08);
+  color: var(--indigo);
+  border: none; cursor: pointer;
+  transition: opacity 200ms, background 200ms;
+  font-family: var(--font-body);
+}
+.ai-action-btn:hover { background: rgba(59, 91, 219, 0.15); }
+.ai-action-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.ai-label {
+  font-size: 0.68rem; font-weight: 700;
+  color: var(--indigo); text-transform: uppercase;
+  letter-spacing: 0.6px; margin-top: 8px; margin-bottom: 2px;
+  opacity: 0; max-height: 0; overflow: hidden;
+  transition: opacity 300ms ease, max-height 300ms ease;
+}
+.ai-label.visible { opacity: 1; max-height: 20px; }
+
+.ai-response {
+  background: var(--surface);
+  border-left: 3px solid var(--indigo);
+  border-radius: 0 8px 8px 0;
+  padding: 0;
+  font-size: 0.85rem; line-height: 1.6;
+  opacity: 0; max-height: 0; overflow: hidden;
+  transition: opacity 300ms ease, max-height 500ms ease, padding 300ms ease;
+  white-space: pre-line;
+  color: var(--text);
+}
+.ai-response.visible {
+  opacity: 1; max-height: 400px; padding: 12px 14px;
+}
+
+/* AI Briefing card (Dashboard) */
+.ai-briefing-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.ai-briefing-card h3 {
+  font-size: 1rem; font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--text);
+}

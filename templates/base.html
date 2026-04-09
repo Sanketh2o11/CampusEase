@@ -308,6 +308,59 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+<!-- AI Assist (shared across Dashboard, Exams, Materials) -->
+{% if user.is_authenticated %}
+<script>
+(function() {
+    var csrfToken = '{{ csrf_token }}';
+
+    window.aiAssist = function(btn) {
+        var context = btn.dataset.aiContext;
+        var subject = btn.dataset.aiSubject || '';
+        var examId = btn.dataset.aiExamId || '';
+        var daysLeft = btn.dataset.aiDays || '';
+        var question = btn.dataset.aiQuestion || '';
+        var wrapper = btn.closest('.ai-wrapper');
+        var responseDiv = wrapper.querySelector('.ai-response');
+        var labelDiv = wrapper.querySelector('.ai-label');
+        var originalText = btn.textContent;
+
+        btn.disabled = true;
+        btn.textContent = 'Thinking...';
+        responseDiv.textContent = '';
+        responseDiv.classList.remove('visible');
+        if (labelDiv) labelDiv.classList.remove('visible');
+
+        fetch('/ai/assist/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+                context: context,
+                exam_id: examId ? parseInt(examId) : null,
+                subject: subject,
+                days_left: daysLeft ? parseInt(daysLeft) : null,
+                question: question
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            responseDiv.textContent = data.answer || data.error || 'No response.';
+            responseDiv.classList.add('visible');
+            if (labelDiv) labelDiv.classList.add('visible');
+        })
+        .catch(function() {
+            responseDiv.textContent = "Couldn't get a response. Try again.";
+            responseDiv.classList.add('visible');
+        })
+        .finally(function() {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        });
+    };
+})();
+</script>
+{% endif %}
+
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

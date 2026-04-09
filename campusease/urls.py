@@ -10,5 +10,6 @@ urlpatterns = [
     path('materials/', include('materials.urls')),
     path('exams/', include('exams.urls')),
     path('lostfound/', include('lostfound.urls')),
+    path('ai/', include('ai.urls')),
     path('', include('core.urls')),
 ]

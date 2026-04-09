@@ -166,6 +166,20 @@
                 </div>
             </div>
 
+            <!-- AI Explain -->
+            <div class="ai-wrapper" style="margin-bottom: 8px;">
+                <div class="ai-actions">
+                    <button class="ai-action-btn" onclick="aiAssist(this)"
+                        data-ai-context="materials"
+                        data-ai-subject="{{ mat.subject }}"
+                        data-ai-question="Explain {{ mat.subject }} briefly for exam revision. Focus on key points.">
+                        Explain
+                    </button>
+                </div>
+                <div class="ai-label">AI Suggestion</div>
+                <div class="ai-response"></div>
+            </div>
+
             <div style="margin-top: auto; display: flex; gap: 8px; align-items: center;">
                 <a href="{{ mat.drive_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="flex: 1; font-size: 0.9rem; padding: 10px;">
                     Open in Drive &#8599;

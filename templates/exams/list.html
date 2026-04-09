@@ -154,43 +154,6 @@
 }
 .score-pct { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
 
-/* Doubt bubble + panel */
-.doubt-bubble {
-    position: fixed; bottom: 88px; right: 24px; z-index: 310;
-    width: 52px; height: 52px; border-radius: 50%;
-    background: var(--navy); color: #fff; border: none;
-    box-shadow: 0 4px 16px rgba(27,42,74,0.35);
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: transform 150ms, box-shadow 150ms;
-}
-.doubt-bubble:hover { transform: scale(1.07); box-shadow: 0 6px 20px rgba(27,42,74,0.45); }
-.doubt-panel {
-    position: fixed; bottom: 152px; right: 24px; z-index: 310;
-    width: 320px; background: var(--surface);
-    border-radius: var(--radius-card); box-shadow: var(--shadow-hover);
-    padding: var(--space-3); display: none;
-}
-.doubt-panel.open { display: block; }
-.doubt-panel-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: var(--space-2);
-}
-.doubt-panel-header h4 { margin: 0; font-size: 0.95rem; color: var(--navy); }
-.doubt-close {
-    background: none; border: none; cursor: pointer; font-size: 1.1rem;
-    color: var(--text-muted); line-height: 1; padding: 0 4px;
-}
-.doubt-answer {
-    max-height: 180px; overflow-y: auto; font-size: 0.88rem; line-height: 1.6;
-    color: var(--navy); margin: var(--space-2) 0;
-    padding: var(--space-2); background: var(--bg-color);
-    border-radius: var(--radius-input); display: none;
-}
-.doubt-answer.visible { display: block; }
-.doubt-disclaimer {
-    font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-1);
-}
-
 /* Exam Cards */
 .exam-section-title {
     font-family: var(--font-heading); font-weight: 700; color: var(--navy);
@@ -336,6 +299,32 @@
                         <div class="syllabus">{{ exam.syllabus }}</div>
                         {% endif %}
 
+                        <!-- AI Assist (upcoming exams only) -->
+                        {% if not exam.is_past %}
+                        <div class="ai-wrapper">
+                            <div class="ai-actions">
+                                <button class="ai-action-btn" onclick="aiAssist(this)"
+                                    data-ai-context="exams"
+                                    data-ai-exam-id="{{ exam.pk }}"
+                                    data-ai-subject="{{ exam.subject }}"
+                                    data-ai-days="{{ exam.days_until }}"
+                                    data-ai-question="What should I study for {{ exam.subject }} given I have {{ exam.days_until }} days left?">
+                                    Study Plan
+                                </button>
+                                <button class="ai-action-btn" onclick="aiAssist(this)"
+                                    data-ai-context="exams"
+                                    data-ai-exam-id="{{ exam.pk }}"
+                                    data-ai-subject="{{ exam.subject }}"
+                                    data-ai-days="{{ exam.days_until }}"
+                                    data-ai-question="List important topics for {{ exam.subject }} exam">
+                                    Important Topics
+                                </button>
+                            </div>
+                            <div class="ai-label">AI Suggestion</div>
+                            <div class="ai-response"></div>
+                        </div>
+                        {% endif %}
+
                         <!-- Personal result inline -->
                         {% if personal_results and exam.pk in personal_results %}
                         <div class="my-result" id="result-{{ exam.pk }}">
@@ -445,27 +434,6 @@
 </div>
 {% endif %}
 
-<!-- AI Doubt Bubble + Panel -->
-<button class="doubt-bubble" id="doubt-bubble" title="Ask a doubt">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-    </svg>
-</button>
-<div class="doubt-panel" id="doubt-panel">
-    <div class="doubt-panel-header">
-        <h4>Ask a Doubt</h4>
-        <button class="doubt-close" id="doubt-close">&#10005;</button>
-    </div>
-    <div class="form-floating" style="margin-bottom: 8px;">
-        <input type="text" id="doubt-question" placeholder=" " autocomplete="off">
-        <label>Type your question...</label>
-    </div>
-    <button class="btn btn-primary" id="doubt-ask-btn" style="width:100%; padding: 10px;">Ask AI</button>
-    <div class="doubt-answer" id="doubt-answer"></div>
-    <div class="doubt-disclaimer">AI can make mistakes — verify important facts.</div>
-</div>
 
 <!-- Result Bottom Sheet -->
 <div class="result-sheet-overlay" id="result-overlay"></div>
@@ -673,96 +641,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<style>
-/* OwlAI hint label */
-.owl-hint {
-    position: fixed; bottom: 100px; right: 86px; z-index: 310;
-    background: var(--navy); color: #fff;
-    font-size: 0.78rem; font-weight: 600; white-space: nowrap;
-    padding: 6px 12px; border-radius: 20px;
-    box-shadow: 0 2px 10px rgba(27,42,74,0.3);
-    pointer-events: none;
-    opacity: 1; transition: opacity 600ms ease;
-}
-.owl-hint.hidden { opacity: 0; }
-.owl-hint::after {
-    content: ''; position: absolute; right: -6px; top: 50%;
-    transform: translateY(-50%);
-    border: 6px solid transparent;
-    border-left-color: var(--navy); border-right: none;
-}
-</style>
-
-<!-- OwlAI hint (fades after 5s) -->
-<div class="owl-hint" id="owl-hint">Ask your doubts &mdash; OwlAI</div>
-
-<script>
-// Doubt Bubble — isolated from main script so errors elsewhere don't block it
-(function() {
-    var csrfToken = '{{ csrf_token }}';
-
-    // Fade out hint after 5 seconds
-    var hint = document.getElementById('owl-hint');
-    if (hint) {
-        setTimeout(function() { hint.classList.add('hidden'); }, 5000);
-        setTimeout(function() { hint.style.display = 'none'; }, 5700);
-    }
-
-    var bubble = document.getElementById('doubt-bubble');
-    var panel  = document.getElementById('doubt-panel');
-    var closeBtn = document.getElementById('doubt-close');
-    var askBtn = document.getElementById('doubt-ask-btn');
-    var answerDiv = document.getElementById('doubt-answer');
-
-    if (!bubble || !panel) return;
-
-    bubble.addEventListener('click', function() {
-        var isOpen = panel.classList.contains('open');
-        if (isOpen) {
-            panel.classList.remove('open');
-        } else {
-            panel.classList.add('open');
-            document.getElementById('doubt-question').focus();
-        }
-    });
-
-    closeBtn.addEventListener('click', function() {
-        panel.classList.remove('open');
-    });
-
-    function askDoubt() {
-        var question = document.getElementById('doubt-question').value.trim();
-        if (!question) return;
-
-        askBtn.disabled = true;
-        askBtn.textContent = 'Thinking...';
-        answerDiv.classList.remove('visible');
-        answerDiv.textContent = '';
-
-        fetch('/exams/ask-doubt/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            body: JSON.stringify({ question: question }),
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            answerDiv.textContent = data.answer || data.error || 'No response received.';
-            answerDiv.classList.add('visible');
-        })
-        .catch(function() {
-            answerDiv.textContent = 'Something went wrong. Try again.';
-            answerDiv.classList.add('visible');
-        })
-        .finally(function() {
-            askBtn.disabled = false;
-            askBtn.textContent = 'Ask AI';
-        });
-    }
-
-    askBtn.addEventListener('click', askDoubt);
-    document.getElementById('doubt-question').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') askDoubt();
-    });
-})();
-</script>
 {% endblock %}

@@ -6,7 +6,6 @@ services:
       MYSQL_DATABASE: campusease
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pcampusease"]
       interval: 5s

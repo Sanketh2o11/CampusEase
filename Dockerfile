@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 # Install system deps required by mysqlclient (works on all platforms via Docker)
 RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev gcc pkg-config \
+    default-libmysqlclient-dev default-mysql-client gcc pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

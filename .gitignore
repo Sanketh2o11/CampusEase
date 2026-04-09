@@ -27,8 +27,20 @@ db.sqlite3
 campusease_dev.sql
 !docker/init/campusease_dev.sql
 
-# Claude Code (local AI assistant config — not for repo)
+# Claude Code
 .claude/
+
+# Node / tooling
+node_modules/
+package.json
+package-lock.json
+
+# Local utility files
+CampusEase.docx
+create_docx.js
+screenshots/
+take_screenshots.py
+For Vrishanksoft/
 
 # OS
 .DS_Store

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'exams',
     'lostfound',
     'core',
+    'ai',
 ]
 
 MIDDLEWARE = [

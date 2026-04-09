@@ -195,6 +195,22 @@
         {% endfor %}
     </div>
 
+    <!-- AI Briefing -->
+    <div class="ai-briefing-card">
+        <h3>AI Briefing</h3>
+        <div class="ai-wrapper">
+            <div class="ai-actions">
+                <button class="ai-action-btn" onclick="aiAssist(this)"
+                    data-ai-context="dashboard"
+                    data-ai-question="What should I focus on today?">
+                    What should I focus today?
+                </button>
+            </div>
+            <div class="ai-label">AI Suggestion</div>
+            <div class="ai-response"></div>
+        </div>
+    </div>
+
     <!-- 3-Column Grid -->
     <div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
 
