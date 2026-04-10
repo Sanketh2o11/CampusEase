@@ -84,6 +84,8 @@ python -m venv venv && venv\Scripts\activate    # Windows
 pip install -r requirements.txt
 ```
 
+> **Windows shortcut:** `scripts\setup.bat` automates steps 1–4 above.
+
 ```sql
 -- Create DB in MySQL
 CREATE DATABASE campusease CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -127,17 +129,23 @@ Python 3.11 / Django 5.2 / MySQL 8.0 / Vanilla HTML+CSS+JS / Google Gemini API (
 ## Project Structure
 
 ```
-accounts/       Custom User + Batch models, auth
-attendance/     Per-subject attendance tracking
-core/           Dashboard
-exams/          Batch exams + personal results
-lostfound/      Lost & found board
-materials/      Study resource sharing
-notices/        Announcements + polls
-timetable/      Weekly schedule
-ai/             Context-aware AI assistant (single endpoint)
-templates/      Django HTML templates
-static/         CSS
+CampusEase/
+├── docker/               Dockerfile, entrypoint, sample DB init SQL
+├── scripts/              Dev utilities (setup.bat, create_test_user.py)
+├── accounts/             Custom User + Batch models, auth
+├── attendance/           Per-subject attendance tracking
+├── core/                 Dashboard
+├── exams/                Batch exams + personal results
+├── lostfound/            Lost & found board
+├── materials/            Study resource sharing
+├── notices/              Announcements + polls
+├── timetable/            Weekly schedule
+├── ai/                   Context-aware AI assistant (single endpoint)
+├── templates/            Django HTML templates
+├── static/               CSS
+├── docker-compose.yml
+├── manage.py
+└── requirements.txt
 ```
 
 ---
