@@ -13,7 +13,9 @@ services:
       retries: 10
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     stdin_open: true   # allows interactive input at startup
     tty: true
     volumes:

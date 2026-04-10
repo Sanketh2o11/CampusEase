@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Source is bind-mounted at runtime; this COPY is for image completeness
 COPY . .
 
-RUN chmod +x entrypoint.sh
+RUN chmod +x docker/entrypoint.sh
 EXPOSE 8000
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["./docker/entrypoint.sh"]
