@@ -346,14 +346,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // 3. Welcome Banner Collapse
     const banner = document.getElementById('welcomeBanner');
-    if (banner && sessionStorage.getItem('welcomeShown') !== 'true') {
+    if (banner) {
+        {% if show_banner %}
         setTimeout(() => {
             banner.classList.add('collapsed');
-            sessionStorage.setItem('welcomeShown', 'true');
-        }, 4000);
-    } else if (banner) {
+        }, 8000);
+        {% else %}
         banner.style.display = 'none';
         banner.classList.add('collapsed');
+        {% endif %}
     }
 
     // 4. SVG Ring Chart Animation

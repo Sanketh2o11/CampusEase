@@ -160,4 +160,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['week_events'] = week_events
         context['week_events_json'] = json.dumps(week_events)
 
+        # Banner: show once per login session
+        if not self.request.session.get('banner_shown', False):
+            context['show_banner'] = True
+            self.request.session['banner_shown'] = True
+        else:
+            context['show_banner'] = False
+
         return context
