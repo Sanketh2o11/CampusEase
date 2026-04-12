@@ -1,4 +1,3 @@
-import json
 from math import ceil, floor
 from datetime import timedelta
 
@@ -97,7 +96,7 @@ class AttendanceListView(LoginRequiredMixin, ListView):
                 if subject not in day_subjects[day]:
                     day_subjects[day].append(subject)
 
-        context['day_subjects_json'] = json.dumps(day_subjects)
+        context['day_subjects'] = day_subjects
 
         return context
 

@@ -27,6 +27,28 @@
 }
 .welcome-owl { width: 100px; height: 100px; }
 
+.ring-progress.safe { stroke: var(--teal); }
+.ring-progress.warn { stroke: var(--amber); }
+.ring-progress.critical { stroke: var(--red); }
+
+.notice-row {
+    padding: var(--space-2) 0 var(--space-2) 12px;
+    margin-bottom: 8px;
+    border-bottom: none;
+    background: var(--bg-color);
+    border-left: 3px solid var(--text-muted);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.notice-row:last-child { margin-bottom: 0; }
+.notice-row.notice-urgent { border-left-color: var(--red); }
+.notice-row.notice-exam { border-left-color: var(--coral); }
+.notice-row.notice-event { border-left-color: var(--teal); }
+.notice-row.notice-announcement { border-left-color: var(--indigo); }
+.notice-row.notice-default { border-left-color: var(--text-muted); }
+
 /* Today Strip */
 .today-strip {
     background-color: var(--surface); border-radius: var(--radius-input);
@@ -64,12 +86,6 @@
     text-decoration: none;
 }
 .tile-link:hover { background-color: rgba(59, 91, 219, 0.1); text-decoration: none; }
-
-.notice-row {
-    padding: var(--space-2) 0; border-bottom: 1px solid var(--border-color);
-    display: flex; flex-direction: column; gap: 4px;
-}
-.notice-row:last-child { border-bottom: none; }
 
 .quick-actions-grid { display: flex; flex-direction: column; gap: var(--space-2); }
 
@@ -126,7 +142,7 @@
 <div class="dashboard-container">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" id="welcomeBanner">
+    <div class="welcome-banner" id="welcomeBanner" data-show-banner="{{ show_banner|yesno:'true,false' }}">
         <div>
             <div class="welcome-greeting" id="dynamic-greeting">Hey, {{ user.full_name|default:user.email }}</div>
             <div class="welcome-subtext">
@@ -234,10 +250,9 @@
                         <div class="ring-chart" style="width:70px;height:70px;">
                             <svg width="70" height="70" viewBox="0 0 100 100">
                                 <circle class="ring-bg" cx="50" cy="50" r="40"/>
-                                <circle class="ring-progress" cx="50" cy="50" r="40"
+                                <circle class="ring-progress {% if att.percentage >= 75 %}safe{% elif att.percentage >= 65 %}warn{% else %}critical{% endif %}" cx="50" cy="50" r="40"
                                     stroke-dasharray="251" stroke-dashoffset="251"
-                                    data-pct="{{ att.percentage }}"
-                                    style="stroke:{% if att.percentage >= 75 %}var(--teal){% elif att.percentage >= 65 %}var(--amber){% else %}var(--red){% endif %};"/>
+                                    data-pct="{{ att.percentage }}"/>
                             </svg>
                             <div class="ring-text" style="font-size:0.8rem;top:50%;transform:translateY(-50%);">{{ att.percentage }}%</div>
                         </div>
@@ -270,9 +285,7 @@
             {% if recent_notices %}
                 <div>
                     {% for notice in recent_notices|slice:":3" %}
-                        <div class="notice-row" style="border-left: 3px solid
-                            {% if notice.notice_type == 'urgent' %}var(--red){% elif notice.notice_type == 'exam' %}var(--coral){% elif notice.notice_type == 'event' %}var(--teal){% elif notice.notice_type == 'announcement' %}var(--indigo){% else %}var(--text-muted){% endif %};
-                            padding-left: 12px; margin-bottom: 8px; border-bottom: none; background: var(--bg-color); border-radius: 4px;">
+                        <div class="notice-row {% if notice.notice_type == 'urgent' %}notice-urgent{% elif notice.notice_type == 'exam' %}notice-exam{% elif notice.notice_type == 'event' %}notice-event{% elif notice.notice_type == 'announcement' %}notice-announcement{% else %}notice-default{% endif %}">
                             <div class="flex justify-between items-center">
                                 <span class="font-bold text-sm" style="color: var(--navy);">{{ notice.title }}</span>
                                 {% if notice.deadline %}
@@ -346,15 +359,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // 3. Welcome Banner Collapse
     const banner = document.getElementById('welcomeBanner');
+    const shouldShowBanner = banner && banner.dataset.showBanner === 'true';
     if (banner) {
-        {% if show_banner %}
-        setTimeout(() => {
-            banner.classList.add('collapsed');
-        }, 8000);
-        {% else %}
+        if (shouldShowBanner) {
+            setTimeout(() => {
+                banner.classList.add('collapsed');
+            }, 8000);
+        } else {
         banner.style.display = 'none';
         banner.classList.add('collapsed');
-        {% endif %}
+        }
     }
 
     // 4. SVG Ring Chart Animation

@@ -20,6 +20,10 @@
     line-height: 1;
     color: var(--navy);
 }
+.huge-percentage.safe { color: var(--teal); }
+.huge-percentage.warn { color: var(--amber); }
+.huge-percentage.critical { color: var(--red); }
+.huge-percentage.neutral { color: var(--text-muted); }
 .stats-summary {
     display: flex;
     justify-content: center;
@@ -96,6 +100,10 @@
     margin-bottom: var(--space-2);
 }
 .subject-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+.attendance-score.safe { color: var(--teal); }
+.attendance-score.warn { color: var(--amber); }
+.attendance-score.critical { color: var(--red); }
+.attendance-score.neutral { color: var(--text-muted); }
 .progress-bg {
     width: 100%; height: 10px; background-color: var(--border-color);
     border-radius: var(--radius-pill); overflow: hidden; margin-bottom: var(--space-1);
@@ -103,6 +111,10 @@
 .progress-fill {
     height: 100%; border-radius: var(--radius-pill); transition: width 0.6s ease-out;
 }
+.progress-fill.safe { background-color: var(--teal); }
+.progress-fill.warn { background-color: var(--amber); }
+.progress-fill.critical { background-color: var(--red); }
+.progress-fill.neutral { background-color: var(--border-color); }
 .stats-row {
     display: flex; justify-content: space-between; align-items: baseline;
     font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);
@@ -169,8 +181,7 @@
 <div class="page-container">
     <!-- Overall Stats Header -->
     <div class="attendance-header">
-        <div class="huge-percentage" id="overall-pct"
-            style="color: {% if overall_percentage >= 75 %}var(--teal){% elif overall_percentage >= 65 %}var(--amber){% else %}var(--red){% endif %};">
+        <div class="huge-percentage {% if overall_percentage >= 75 %}safe{% elif overall_percentage >= 65 %}warn{% else %}critical{% endif %}" id="overall-pct">
             {{ overall_percentage }}%
         </div>
         <div class="stats-summary">
@@ -220,14 +231,12 @@
                         <span class="badge badge-gray">New</span>
                     {% endif %}
                 </div>
-                <div class="font-mono" style="font-size: 1.5rem; font-weight: 700;
-                    color: {% if s.percentage >= 75 %}var(--teal){% elif s.total > 0 and s.percentage >= 65 %}var(--amber){% elif s.total > 0 %}var(--red){% else %}var(--text-muted){% endif %};">
+                <div class="font-mono attendance-score {% if s.percentage >= 75 %}safe{% elif s.total > 0 and s.percentage >= 65 %}warn{% elif s.total > 0 %}critical{% else %}neutral{% endif %}" style="font-size: 1.5rem; font-weight: 700;">
                     {{ s.percentage }}%
                 </div>
             </div>
             <div class="progress-bg">
-                <div class="progress-fill" style="width: {{ s.percentage }}%;
-                    background-color: {% if s.percentage >= 75 %}var(--teal){% elif s.total > 0 and s.percentage >= 65 %}var(--amber){% elif s.total > 0 %}var(--red){% else %}var(--border-color){% endif %};"></div>
+                <div class="progress-fill {% if s.percentage >= 75 %}safe{% elif s.total > 0 and s.percentage >= 65 %}warn{% elif s.total > 0 %}critical{% else %}neutral{% endif %}" data-pct="{{ s.percentage }}"></div>
             </div>
             <div class="stats-row">
                 <span>{{ s.attended }} attended · {{ s.total }} total</span>
@@ -245,6 +254,9 @@
         {% endfor %}
     </div>
 </div>
+
+<!-- Day→subjects map for client-side timetable filtering -->
+{{ day_subjects|json_script:"day-subjects-data" }}
 
 <!-- Mark Attendance Bottom Sheet -->
 <div class="mark-sheet-overlay" id="mark-overlay"></div>
@@ -272,10 +284,45 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const todayStr = '{{ today|date:"Y-m-d" }}';
-    const daySubjects = JSON.parse('{{ day_subjects_json|escapejs }}');
+    let daySubjects = {};
+    try {
+        const daySubjectsEl = document.getElementById('day-subjects-data');
+        daySubjects = daySubjectsEl ? JSON.parse(daySubjectsEl.textContent) : {};
+    } catch (err) {
+        console.error('Failed to parse day subjects JSON:', err);
+        daySubjects = {};
+    }
     let currentMonday = null;
     let selectedDate = todayStr;
     let markSubjectId = null;
+
+    function attendanceStatus(pct, total) {
+        if (pct >= 75) return 'safe';
+        if (total > 0 && pct >= 65) return 'warn';
+        if (total > 0) return 'critical';
+        return 'neutral';
+    }
+
+    function applyAttendanceVisuals(card) {
+        const pct = parseFloat(card.dataset.pct) || 0;
+        const total = parseInt(card.dataset.total || '0', 10) || 0;
+        const status = attendanceStatus(pct, total);
+        const pctEl = card.querySelector('.attendance-score');
+        const fill = card.querySelector('.progress-fill');
+
+        if (pctEl) {
+            pctEl.classList.remove('safe', 'warn', 'critical', 'neutral');
+            pctEl.classList.add(status);
+        }
+
+        if (fill) {
+            fill.style.width = `${pct}%`;
+            fill.classList.remove('safe', 'warn', 'critical', 'neutral');
+            fill.classList.add(status);
+        }
+    }
+
+    document.querySelectorAll('.subject-card').forEach(applyAttendanceVisuals);
 
     // ---------- Day filtering ----------
     const noClassesMsg = document.getElementById('no-classes-msg');
@@ -322,10 +369,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const weekDaysEl = document.getElementById('week-days');
 
     function loadWeek(dateStr) {
-        fetch(`/attendance/week/?date=${dateStr}`, {
-            headers: { 'X-CSRFToken': csrfToken }
+        fetch(`/attendance/week/?date=${dateStr}`)
+        .then(r => {
+            if (!r.ok) throw new Error(`Week fetch failed: ${r.status}`);
+            return r.json();
         })
-        .then(r => r.json())
         .then(data => {
             currentMonday = data.monday;
             weekDaysEl.innerHTML = '';
@@ -345,6 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 weekDaysEl.appendChild(btn);
             });
+        })
+        .catch(err => {
+            console.error('Attendance week strip error:', err);
         });
     }
 
@@ -434,14 +485,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update card live
                 const card = document.getElementById(`card-${markSubjectId}`);
                 if (card) {
-                    const pctEl = card.querySelector('.font-mono');
+                    const pctEl = card.querySelector('.attendance-score');
                     pctEl.textContent = `${data.percentage}%`;
-                    const color = data.percentage >= 75 ? 'var(--teal)' : data.percentage >= 65 ? 'var(--amber)' : 'var(--red)';
-                    pctEl.style.color = color;
 
                     const fill = card.querySelector('.progress-fill');
                     fill.style.width = `${data.percentage}%`;
-                    fill.style.backgroundColor = color;
+
+                    const status = attendanceStatus(data.percentage, data.total);
+                    pctEl.classList.remove('safe', 'warn', 'critical', 'neutral');
+                    pctEl.classList.add(status);
+                    fill.classList.remove('safe', 'warn', 'critical', 'neutral');
+                    fill.classList.add(status);
+
+                    card.dataset.pct = data.percentage;
+                    card.dataset.total = data.total;
 
                     const statsRow = card.querySelector('.stats-row span');
                     statsRow.textContent = `${data.attended} attended · ${data.total} total`;

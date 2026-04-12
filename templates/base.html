@@ -18,6 +18,9 @@
 </head>
 <body>
 
+<!-- CSRF token available synchronously for all AJAX fetch calls -->
+<script>window.csrfToken = '{{ csrf_token }}';</script>
+
 <!-- JS for Page fadeIn constraint -->
 <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -171,9 +174,6 @@
 <!-- Global JavaScript -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // CSRF token available globally for all AJAX fetch calls
-    window.csrfToken = '{{ csrf_token }}';
-
     // Auto-apply form-control class to all form inputs
     document.querySelectorAll('input, select, textarea').forEach(function(el) {
         if (el.type !== 'submit' && el.type !== 'hidden') {
