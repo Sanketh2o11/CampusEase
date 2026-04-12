@@ -376,8 +376,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const csrfToken = '{{ csrf_token }}';
-
     // Chip filtering
     const chips = document.querySelectorAll('.chip');
     const cards = document.querySelectorAll('#notices-container .notice-card');
@@ -406,7 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Poll voting
 function castVote(noticeId, choice) {
-    const csrfToken = '{{ csrf_token }}';
     fetch(`/notices/${noticeId}/vote/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },

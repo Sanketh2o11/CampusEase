@@ -6,9 +6,11 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, DeleteView
 from django.views import View
+
+from core.mixins import CRRequiredMixin
 from django.utils import timezone
 from django.db.models import F
 
@@ -71,18 +73,12 @@ class MaterialCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class MaterialDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class MaterialDeleteView(LoginRequiredMixin, CRRequiredMixin, DeleteView):
     model = Material
     success_url = reverse_lazy('material_list')
 
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_cr
 
-
-class MaterialPinToggleView(LoginRequiredMixin, UserPassesTestMixin, View):
-    def test_func(self):
-        return self.request.user.is_cr
-
+class MaterialPinToggleView(LoginRequiredMixin, CRRequiredMixin, View):
     def post(self, request, pk):
         material = get_object_or_404(Material, pk=pk)
         material.is_pinned = not material.is_pinned

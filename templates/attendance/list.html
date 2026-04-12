@@ -271,7 +271,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const csrfToken = '{{ csrf_token }}';
     const todayStr = '{{ today|date:"Y-m-d" }}';
     const daySubjects = JSON.parse('{{ day_subjects_json|escapejs }}');
     let currentMonday = null;

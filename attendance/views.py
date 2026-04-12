@@ -14,6 +14,7 @@ from django.db.models import Count, Q
 
 from .models import Attendance, AttendanceRecord
 from timetable.models import TimetableSlot
+from core.utils import parse_json_body
 
 
 def compute_attendance_stats(attendance_obj):
@@ -105,13 +106,12 @@ class AttendanceListView(LoginRequiredMixin, ListView):
 @require_POST
 def attendance_mark(request):
     """AJAX endpoint: POST /attendance/mark/ — mark attendance for a subject on a date."""
-    try:
-        data = json.loads(request.body)
-        subject_id = data.get('subject_id')
-        date_str = data.get('date')
-        status = data.get('status')
-    except (json.JSONDecodeError, AttributeError):
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    data, err = parse_json_body(request)
+    if err:
+        return err
+    subject_id = data.get('subject_id')
+    date_str = data.get('date')
+    status = data.get('status')
 
     if status not in ('present', 'absent', 'not_marked'):
         return JsonResponse({'error': 'Invalid status'}, status=400)

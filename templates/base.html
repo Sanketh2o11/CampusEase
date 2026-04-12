@@ -171,6 +171,16 @@
 <!-- Global JavaScript -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    // CSRF token available globally for all AJAX fetch calls
+    window.csrfToken = '{{ csrf_token }}';
+
+    // Auto-apply form-control class to all form inputs
+    document.querySelectorAll('input, select, textarea').forEach(function(el) {
+        if (el.type !== 'submit' && el.type !== 'hidden') {
+            el.classList.add('form-control');
+        }
+    });
+
     // -------------------------------------------------------------------------
     // Mobile Bottom Sheet (More) Logic with Popstate
     // -------------------------------------------------------------------------

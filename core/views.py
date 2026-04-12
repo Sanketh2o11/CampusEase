@@ -5,13 +5,13 @@ from math import ceil, floor
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 from django.utils import timezone
-from django.db.models import Q
 
 from attendance.models import Attendance, AttendanceRecord
 from notices.models import Notice, NoticeRead
 from materials.models import Material
 from lostfound.models import LostFoundItem
 from exams.models import BatchExam
+from core.utils import compute_attendance_pct
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -46,10 +46,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         attendances = list(Attendance.objects.filter(student=user).prefetch_related('records'))
         attendance_stats = []
         for att in attendances:
-            records = att.records.all()
-            total_r = records.filter(~Q(status='not_marked')).count()
-            attended_r = records.filter(status='present').count()
-            pct = round((attended_r / total_r) * 100, 1) if total_r > 0 else 0.0
+            attended_r, total_r, pct = compute_attendance_pct(att)
             attendance_stats.append({
                 'subject': att.subject,
                 'percentage': pct,

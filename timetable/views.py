@@ -1,7 +1,9 @@
 import json
 
 from django.shortcuts import render, redirect
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+from core.mixins import CRRequiredMixin
 from django.contrib import messages
 from django.views import View
 from django.utils import timezone
@@ -13,6 +15,22 @@ from accounts.models import User
 DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 PERIODS = range(1, 9)
+
+
+def _build_grid_data(slots):
+    """Build grid and grid_data from a TimetableSlot queryset.
+
+    Returns:
+        grid: dict keyed by (day, period) → subject_name
+        grid_data: JSON-serializable dict keyed by day → list of subject strings per period
+    """
+    grid = {}
+    for slot in slots:
+        grid[(slot.day, slot.period)] = slot.subject_name
+    grid_data = {}
+    for day in DAYS:
+        grid_data[day] = [grid.get((day, p), '') for p in PERIODS]
+    return grid, grid_data
 
 
 class TimetableStudentView(LoginRequiredMixin, View):
@@ -32,16 +50,7 @@ class TimetableStudentView(LoginRequiredMixin, View):
             })
 
         slots = TimetableSlot.objects.filter(batch=batch)
-        grid = {}
-        for slot in slots:
-            grid[(slot.day, slot.period)] = slot.subject_name
-
-        # Build grid data as a serializable structure for template
-        grid_data = {}
-        for day in DAYS:
-            grid_data[day] = []
-            for p in PERIODS:
-                grid_data[day].append(grid.get((day, p), ''))
+        grid, grid_data = _build_grid_data(slots)
 
         # Today info
         today_name = timezone.now().strftime('%A').lower()
@@ -71,11 +80,8 @@ class TimetableStudentView(LoginRequiredMixin, View):
         })
 
 
-class TimetableEditView(LoginRequiredMixin, UserPassesTestMixin, View):
+class TimetableEditView(LoginRequiredMixin, CRRequiredMixin, View):
     """CR-only timetable edit view."""
-
-    def test_func(self):
-        return self.request.user.is_cr
 
     def get(self, request):
         batch = request.user.batch
@@ -89,16 +95,7 @@ class TimetableEditView(LoginRequiredMixin, UserPassesTestMixin, View):
             })
 
         slots = TimetableSlot.objects.filter(batch=batch)
-        grid = {}
-        for slot in slots:
-            grid[(slot.day, slot.period)] = slot.subject_name
-
-        # Build JSON-serializable grid_data for JS
-        grid_data = {}
-        for day in DAYS:
-            grid_data[day] = []
-            for p in PERIODS:
-                grid_data[day].append(grid.get((day, p), ''))
+        grid, grid_data = _build_grid_data(slots)
 
         return render(request, 'timetable/edit.html', {
             'days': DAYS,

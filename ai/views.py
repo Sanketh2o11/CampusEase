@@ -1,5 +1,3 @@
-import json
-
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
@@ -12,6 +10,7 @@ from attendance.models import Attendance
 from exams.models import BatchExam
 from notices.models import Notice, NoticeRead
 from timetable.models import TimetableSlot
+from core.utils import parse_json_body, compute_attendance_pct
 
 
 SYSTEM_PROMPT = (
@@ -44,12 +43,8 @@ def _get_attendance_pct(user, subject):
     att = Attendance.objects.filter(student=user, subject=subject).first()
     if not att:
         return None
-    records = att.records.exclude(status='not_marked')
-    total = records.count()
-    if total == 0:
-        return None
-    present = records.filter(status='present').count()
-    return round((present / total) * 100, 1)
+    _, total, pct = compute_attendance_pct(att)
+    return pct if total > 0 else None
 
 
 def _get_all_attendance_stats(user):
@@ -187,10 +182,9 @@ class AIAssistView(LoginRequiredMixin, View):
     """Single AI endpoint — context + priority aware."""
 
     def post(self, request):
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        data, err = parse_json_body(request)
+        if err:
+            return err
 
         context = (data.get('context') or '').strip()
         if context not in ('dashboard', 'exams', 'materials'):

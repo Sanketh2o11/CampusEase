@@ -19,25 +19,7 @@
         <form method="post">
             {% csrf_token %}
             
-            {% if form.non_field_errors %}
-            <div class="alert alert-error">
-                {% for error in form.non_field_errors %}
-                    {{ error }}
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            {% for field in form %}
-                <div class="form-group">
-                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <div class="text-error mt-2 text-sm" style="color: var(--danger);">
-                            {{ field.errors.0 }}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
+            {% include 'partials/_form_fields.html' %}
             
             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
                 {% if form.instance.pk %}Save Changes{% else %}Add Subject{% endif %}
@@ -47,13 +29,6 @@
 </div>
 
 <script>
-    document.querySelectorAll('input, select').forEach(input => {
-        if(input.type !== 'submit' && input.type !== 'hidden') {
-            input.classList.add('form-control');
-        }
-    });
-
-    // Make inputs required HTML5
     document.querySelectorAll('input').forEach(input => {
         if(input.name !== 'csrfmiddlewaretoken') {
              input.required = true;

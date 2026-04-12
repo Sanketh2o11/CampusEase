@@ -3,7 +3,9 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+from core.mixins import CRRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, View
@@ -104,10 +106,7 @@ class LostFoundClaimView(LoginRequiredMixin, View):
         })
 
 
-class LostFoundDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_cr
-
+class LostFoundDeleteView(LoginRequiredMixin, CRRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
         item = get_object_or_404(LostFoundItem, pk=pk)
         title = item.title

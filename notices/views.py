@@ -1,21 +1,16 @@
-import json
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views import View
 
+from core.mixins import CRRequiredMixin
+from core.utils import parse_json_body, get_poll_counts
 from .models import Notice, NoticePoll, PollVote, NoticeRead
 from .forms import NoticeForm
-
-
-class CRRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_cr
 
 
 class NoticeListView(LoginRequiredMixin, ListView):
@@ -47,9 +42,10 @@ class NoticeListView(LoginRequiredMixin, ListView):
             notice.read_count = notice.reads.count()
             if hasattr(notice, 'poll'):
                 poll = notice.poll
-                poll.yes_count = poll.votes.filter(choice='yes').count()
-                poll.no_count = poll.votes.filter(choice='no').count()
-                poll.maybe_count = poll.votes.filter(choice='maybe').count()
+                counts = get_poll_counts(poll)
+                poll.yes_count = counts['yes_count']
+                poll.no_count = counts['no_count']
+                poll.maybe_count = counts['maybe_count']
                 try:
                     poll.user_vote = poll.votes.get(student=user).choice
                 except PollVote.DoesNotExist:
@@ -110,11 +106,10 @@ class NoticePinToggleView(LoginRequiredMixin, CRRequiredMixin, View):
 @require_POST
 def poll_vote(request, pk):
     """AJAX endpoint: POST /notices/<id>/vote/ — vote on a poll."""
-    try:
-        data = json.loads(request.body)
-        choice = data.get('choice')
-    except (json.JSONDecodeError, AttributeError):
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    data, err = parse_json_body(request)
+    if err:
+        return err
+    choice = data.get('choice')
 
     if choice not in ('yes', 'no', 'maybe'):
         return JsonResponse({'error': 'Invalid choice'}, status=400)
@@ -132,10 +127,4 @@ def poll_vote(request, pk):
         defaults={'choice': choice},
     )
 
-    # Return updated counts
-    return JsonResponse({
-        'yes_count': poll.votes.filter(choice='yes').count(),
-        'no_count': poll.votes.filter(choice='no').count(),
-        'maybe_count': poll.votes.filter(choice='maybe').count(),
-        'user_vote': choice,
-    })
+    return JsonResponse({**get_poll_counts(poll), 'user_vote': choice})

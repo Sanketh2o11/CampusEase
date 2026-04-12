@@ -455,7 +455,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const csrfToken = '{{ csrf_token }}';
     const examDates = JSON.parse(document.getElementById('exam-dates-data').textContent);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

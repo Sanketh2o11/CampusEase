@@ -3,12 +3,15 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.http import JsonResponse
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, View
+
+from core.mixins import CRRequiredMixin
 from django.utils import timezone
 
 from .models import BatchExam, PersonalExamResult
 from .forms import BatchExamForm, PersonalExamResultForm
+from core.utils import parse_json_body
 
 
 class ExamListView(LoginRequiredMixin, ListView):
@@ -67,15 +70,12 @@ class ExamListView(LoginRequiredMixin, ListView):
         return context
 
 
-class BatchExamCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class BatchExamCreateView(LoginRequiredMixin, CRRequiredMixin, CreateView):
     """CR-only: add a batch exam."""
     model = BatchExam
     form_class = BatchExamForm
     template_name = 'exams/form.html'
     success_url = reverse_lazy('exam_list')
-
-    def test_func(self):
-        return self.request.user.is_cr
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -94,10 +94,9 @@ class PersonalResultCreateView(LoginRequiredMixin, View):
 
         batch_exam = get_object_or_404(BatchExam, pk=pk, batch=user_batch)
 
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        data, err = parse_json_body(request)
+        if err:
+            return err
 
         # Guard against JSON null values crashing .strip()
         raw_score = data.get('score') or ''

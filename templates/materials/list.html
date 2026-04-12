@@ -356,7 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Thank You
 function thankMaterial(btn, materialId) {
     if (btn.classList.contains('thanked')) return;
-    const csrfToken = '{{ csrf_token }}';
     btn.disabled = true;
     fetch(`/materials/${materialId}/thankyou/`, {
         method: 'POST',
