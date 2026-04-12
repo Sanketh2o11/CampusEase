@@ -14,15 +14,10 @@
 ---
 
 ## What does this do?
----
 
-## Demo
 
 ![CampusEase Demo](assets/demo.gif)
-
 *A quick walkthrough of login, dashboard, attendance tracking, and AI assistant.*
-
-Click on the GIF to see it in full size.
 
 ---
 
