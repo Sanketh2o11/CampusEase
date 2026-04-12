@@ -14,6 +14,17 @@
 ---
 
 ## What does this do?
+---
+
+## Demo
+
+![CampusEase Demo](assets/demo.gif)
+
+*A quick walkthrough of login, dashboard, attendance tracking, and AI assistant.*
+
+Click on the GIF to see it in full size.
+
+---
 
 Students juggle attendance, exams, notes, notices, and timetables across WhatsApp groups, random PDFs, and memory. CampusEase puts it all in one place.
 
@@ -47,17 +58,7 @@ A context-aware AI assistant (Gemini API) that adapts based on where you are:
 
 One endpoint, one prompt, multiple contexts. Not a chatbot — an assistant that knows your data.
 
----
 
-## Demo
-
-![CampusEase Demo](assets/demo.gif)
-
-*A quick walkthrough of login, dashboard, attendance tracking, and AI assistant.*
-
-Click on the GIF to see it in full size.
-
----
 
 ## Quick Start
 
