@@ -85,7 +85,13 @@ docker compose down -v && docker compose up -d db && docker compose run --rm --s
 ```bash
 git clone https://github.com/Sanketh2o11/CampusEase.git
 cd CampusEase
-python -m venv venv && venv\Scripts\activate    # Windows
+# Windows (Command Prompt)
+python -m venv venv && venv\Scripts\activate
+
+# Windows (PowerShell) — use this if the above doesn't work
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
 # python3 -m venv venv && source venv/bin/activate  # Mac/Linux
 pip install -r requirements.txt
 ```
