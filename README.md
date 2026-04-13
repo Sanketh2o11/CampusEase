@@ -83,7 +83,7 @@ docker compose down -v && docker compose up -d db && docker compose run --rm --s
 **Requires:** Python 3.11+, MySQL 8.0+
 
 ```bash
-git clone https://github.com/your-username/CampusEase.git
+git clone https://github.com/Sanketh2o11/CampusEase.git
 cd CampusEase
 python -m venv venv && venv\Scripts\activate    # Windows
 # python3 -m venv venv && source venv/bin/activate  # Mac/Linux
