@@ -98,7 +98,7 @@ For active development with sample data. Requires MySQL 8.0+.
    > **Windows shortcut:** `scripts\setup.bat --mysql` automates venv + dependency install + `.env` setup.
 3. Import sample data:
    ```bash
-   mysql -u root -p campusease < campusease_dev.sql
+   mysql -u root -p campusease < docker/init/campusease_dev.sql
    ```
 4. Run:
    ```bash
