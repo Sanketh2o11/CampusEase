@@ -60,7 +60,7 @@ One endpoint, one prompt, multiple contexts. Not a chatbot — an assistant that
 ### Docker (recommended)
 
 ```bash
-git clone https://github.com/your-username/CampusEase.git
+git clone https://github.com/Sanketh2o11/CampusEase.git
 cd CampusEase
 docker compose up -d db
 docker compose run --rm --service-ports web
@@ -78,44 +78,64 @@ docker compose down
 docker compose down -v && docker compose up -d db && docker compose run --rm --service-ports web
 ```
 
-### Manual Setup
+### Manual Setup (No Docker)
 
-**Requires:** Python 3.11+, MySQL 8.0+
+**Requires:** Python 3.11+
 
 ```bash
 git clone https://github.com/Sanketh2o11/CampusEase.git
 cd CampusEase
-# Windows (Command Prompt)
-python -m venv venv && venv\Scripts\activate
 
-# Windows (PowerShell) — use this if the above doesn't work
+# Create virtual environment
 python -m venv venv
-.\venv\Scripts\Activate.ps1
 
-# python3 -m venv venv && source venv/bin/activate  # Mac/Linux
+# Activate it (choose your shell):
+venv\Scripts\activate.bat          # Windows CMD
+& .\venv\Scripts\Activate.ps1     # Windows PowerShell
+source venv/bin/activate            # Mac/Linux
+
 pip install -r requirements.txt
 ```
 
-> **Windows shortcut:** `scripts\setup.bat` automates steps 1–4 above.
+> **PowerShell "scripts disabled" error?** Run this once (as Administrator):
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
 
-```sql
--- Create DB in MySQL
-CREATE DATABASE campusease CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+> **`mysqlclient` install failing?** That package needs MySQL C libraries. If you don't have MySQL installed, just delete the `mysqlclient==2.2.8` line from `requirements.txt`, save, and re-run the install. The app will automatically use SQLite instead.
+
+> **Windows shortcut:** `scripts\setup.bat` automates steps above.
 
 ```bash
-# Optional: import sample data
-mysql -u root -p campusease < campusease_dev.sql
-
-# Configure
-copy .env.example .env   # then edit DATABASE_URL with your MySQL password
-
-# Run
 python manage.py migrate
 python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000`.
+Open `http://127.0.0.1:8000`. That's it — no database setup needed. Django uses a local SQLite file (`db.sqlite3`) automatically.
+
+<details>
+<summary><strong>Want to use MySQL instead?</strong></summary>
+
+1. Install MySQL 8.0+
+2. Create the database:
+   ```sql
+   CREATE DATABASE campusease CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+3. Copy and configure environment:
+   ```bash
+   copy .env.example .env   # then edit DATABASE_URL with your MySQL password
+   ```
+4. Optionally import sample data:
+   ```bash
+   mysql -u root -p campusease < campusease_dev.sql
+   ```
+5. Run migrations and start:
+   ```bash
+   python manage.py migrate
+   python manage.py runserver
+   ```
+
+</details>
 
 ---
 
