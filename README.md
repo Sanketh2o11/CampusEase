@@ -6,22 +6,17 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2-092E20?style=flat-square&logo=django&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-default-003B57?style=flat-square&logo=sqlite&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 
+![CampusEase Demo](assets/demo.gif)
+
 </div>
 
----
-
-## What does this do?
 
 
-![CampusEase Demo](assets/demo.gif)
-*A quick walkthrough of login, dashboard, attendance tracking, and AI assistant.*
-
----
-
-Students juggle attendance, exams, notes, notices, and timetables across WhatsApp groups, random PDFs, and memory. CampusEase puts it all in one place.
+CampusEase puts attendance, exams, notes, notices, and timetables in one place — no more juggling WhatsApp groups, random PDFs, and memory. Two roles: **CRs** manage content, **Students** consume it. Everything is scoped to your batch.
 
 - **Track attendance** per subject with live percentages and 75% threshold warnings
 - **View exam schedules** set by your CR, track your scores privately, and get AI-generated study plans
@@ -30,8 +25,9 @@ Students juggle attendance, exams, notes, notices, and timetables across WhatsAp
 - **Report lost items** or claim found ones with a built-in flow
 - **AI assistant** that uses your actual data (attendance, exams, deadlines) to tell you what to focus on — not generic advice
 
-Two roles: **Class Representatives (CRs)** manage content. **Students** consume it. Everything is scoped to your batch.
-
+<details>
+<summary><strong>View Full Module Breakdown & AI Details</strong></summary>
+<br>
 ### Modules
 
 | Module | What it does |
@@ -53,22 +49,79 @@ A context-aware AI assistant (Gemini API) that adapts based on where you are:
 
 One endpoint, one prompt, multiple contexts. Not a chatbot — an assistant that knows your data.
 
+</details>
 
+---
 
 ## Quick Start
 
-### Docker (recommended)
+**Try it out — no database setup needed.** Requires Python 3.11+.
 
 ```bash
 git clone https://github.com/Sanketh2o11/CampusEase.git
 cd CampusEase
+
+
+python -m venv venv     #Create a virtual Environment
+
+# Activate virtual environment:
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
+
+pip install -r requirements.txt
+python manage.py migrate
+python scripts/create_test_user.py
+python manage.py runserver
+```
+Open `http://127.0.0.1:8000`.
+
+Login with `cr@test.com` / `campusease123` (CR) 
+or
+`student@test.com` / `campusease123` (Student).
+
+> 👉 Facing issues? Jump to [Troubleshooting](#troubleshooting).
+
+> Gemini API key is optional. Set `GEMINI_API_KEY` in a `.env` file to enable the AI assistant.
+
+## Development Setup (MySQL)
+
+For active development with sample data. Requires MySQL 8.0+.
+
+1. Create the database:
+   ```sql
+   CREATE DATABASE campusease CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+2. Configure environment:
+   ```bash
+   copy .env.example .env   # then uncomment and edit DATABASE_URL with your MySQL password
+   ```
+   > **Windows shortcut:** `scripts\setup.bat --mysql` automates venv + dependency install + `.env` setup.
+3. Import sample data:
+   ```bash
+   mysql -u root -p campusease < campusease_dev.sql
+   ```
+4. Run:
+   ```bash
+   python manage.py migrate
+   python manage.py runserver
+   ```
+
+Pre-loaded test accounts (from `campusease_dev.sql`, batch **CS-2023**):
+
+| Role | Email | Password |
+|------|-------|----------|
+| CR | `cr@campusease.com` | `CR@1234` |
+| Student | `student1@campusease.com` | `Student@1234` |
+
+<details>
+<summary><strong>Docker alternative</strong></summary>
+
+```bash
 docker compose up -d db
 docker compose run --rm --service-ports web
 ```
 
-Open `http://localhost:8000`. Done.
-
-> Gemini API key is optional — you'll be prompted on startup. Press Enter to skip.
+Open `http://localhost:8000`. Sample data is imported automatically. You'll be prompted for an optional Gemini API key on startup.
 
 ```bash
 # Stop
@@ -78,85 +131,7 @@ docker compose down
 docker compose down -v && docker compose up -d db && docker compose run --rm --service-ports web
 ```
 
-### Manual Setup (No Docker)
-
-**Requires:** Python 3.11+
-
-```bash
-git clone https://github.com/Sanketh2o11/CampusEase.git
-cd CampusEase
-
-# Create virtual environment
-python -m venv venv
-
-# Activate it (choose your shell):
-venv\Scripts\activate.bat          # Windows CMD
-& .\venv\Scripts\Activate.ps1     # Windows PowerShell
-source venv/bin/activate            # Mac/Linux
-
-pip install -r requirements.txt
-```
-
-> **PowerShell "scripts disabled" error?** Run this once (as Administrator):
-> ```powershell
-> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-> ```
-
-> **`mysqlclient` install failing?** That package needs MySQL C libraries. If you don't have MySQL installed, just delete the `mysqlclient==2.2.8` line from `requirements.txt`, save, and re-run the install. The app will automatically use SQLite instead.
-
-> **Windows shortcut:** `scripts\setup.bat` automates steps above.
-
-```bash
-python manage.py migrate
-python manage.py runserver
-```
-
-Open `http://127.0.0.1:8000`. That's it — no database setup needed. Django uses a local SQLite file (`db.sqlite3`) automatically.
-
-<details>
-<summary><strong>Want to use MySQL instead?</strong></summary>
-
-1. Install MySQL 8.0+
-2. Create the database:
-   ```sql
-   CREATE DATABASE campusease CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-3. Copy and configure environment:
-   ```bash
-   copy .env.example .env   # then edit DATABASE_URL with your MySQL password
-   ```
-4. Optionally import sample data:
-   ```bash
-   mysql -u root -p campusease < campusease_dev.sql
-   ```
-5. Run migrations and start:
-   ```bash
-   python manage.py migrate
-   python manage.py runserver
-   ```
-
 </details>
-
----
-
-## Test Accounts
-
-Pre-loaded via `campusease_dev.sql`. All in batch **CS-2023**.
-
-| Role | Email | Password |
-|------|-------|----------|
-| CR | `cr@campusease.com` | `CR@1234` |
-| Student | `student1@campusease.com` | `Student@1234` |
-| Student | `student2@campusease.com` | `Student@1234` |
-| Student | `student3@campusease.com` | `Student@1234` |
-
----
-
-## Tech Stack
-
-Python 3.11 / Django 5.2 / MySQL 8.0 / Vanilla HTML+CSS+JS / Google Gemini API (optional) / Docker Compose
-
----
 
 ## Project Structure
 
@@ -180,16 +155,20 @@ CampusEase/
 └── requirements.txt
 ```
 
----
+## Tech Stack
+
+Python 3.11 / Django 5.2 / SQLite or MySQL 8.0 / Vanilla HTML+CSS+JS / Google Gemini API (optional) / Docker Compose
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| `ModuleNotFoundError: MySQLdb` | `pip install mysqlclient` |
+| `mysqlclient` install fails | Remove `mysqlclient==2.2.8` from `requirements.txt` — not needed for SQLite |
+| Can't login with `cr@test.com` | Run `python scripts/create_test_user.py` — SQLite starts empty |
 | Can't connect to MySQL | Start MySQL: `net start MySQL80` (Win) / `brew services start mysql` (Mac) |
 | Unknown column error | Run `python manage.py migrate` |
 | Port 8000 in use | Change port in `docker-compose.yml` or stop the other process |
+| AI Assistant not working | Set `GEMINI_API_KEY` in a `.env` file |
 
 ---
 
