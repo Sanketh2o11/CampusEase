@@ -163,7 +163,7 @@ Python 3.11 / Django 5.2 / SQLite or MySQL 8.0 / Vanilla HTML+CSS+JS / Google Ge
 
 | Problem | Fix |
 |---------|-----|
-| `mysqlclient` install fails | Remove `mysqlclient==2.2.8` from `requirements.txt` — not needed for SQLite |
+| Using MySQL instead of SQLite | Add `mysqlclient==2.2.8` to `requirements.txt` then re-run `pip install -r requirements.txt` |
 | Can't login with `cr@test.com` | Run `python scripts/create_test_user.py` — SQLite starts empty |
 | Can't connect to MySQL | Start MySQL: `net start MySQL80` (Win) / `brew services start mysql` (Mac) |
 | Unknown column error | Run `python manage.py migrate` |
