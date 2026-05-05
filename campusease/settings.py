@@ -18,6 +18,7 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
+    # Keep production-safe default; README quickstart shouldn't require a .env.
     DEBUG=(bool, False)
 )
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
@@ -30,9 +31,14 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-dummy-key-for-dev')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
+# Default to True so first-time users can run the dev server without a .env.
+DEBUG = env('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+# Allow localhost during development (even if DEBUG isn't set via .env).
+# Production should set ALLOWED_HOSTS explicitly.
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition

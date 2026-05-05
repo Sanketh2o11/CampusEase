@@ -1,5 +1,14 @@
 import os
+import sys
+
 import django
+
+
+# Make the script runnable via `python scripts/create_test_user.py`
+# (i.e., without needing `PYTHONPATH=.`).
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'campusease.settings')
 django.setup()
